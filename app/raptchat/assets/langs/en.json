@@ -1,0 +1,78 @@
+{
+	"buttons": {
+		"add_connection": "Add Connection",
+		"settings": "Settings",
+		"about": "About",
+		"save": "Save",
+		"add_action": "Add Action",
+		"cancel": "Cancel",
+		"delete": "Delete",
+		"open": "Open",
+		"export": "Export",
+		"proceed": "Proceed",
+		"add_header": "Add Header",
+		"pause": "Pause",
+		"resume": "Resume",
+		"capture_snapshot": "Capture Snapshot",
+		"run": "Run",
+		"close": "Close"
+	},
+	"labels": {
+		"no_connections": "No connections!",
+		"delete_selected": "Delete Selected Items",
+		"delete_selected_confirmation": "Are you sure you want to delete {amount} items?",
+		"selected": "{amount} Selected",
+		"connection_name": "Name",
+		"unnamed_connection": "Unnamed Connection",
+		"private_key": "Private Key",
+		"public_key": "Public Key",
+		"fill_needed_fields": "Please fill needed fields",
+		"failed_to_load_file": "Failed to load file!",
+		"failed_to_export_file": "Failed to export file!",
+		"file_loaded": "File Loaded!",
+		"file_exported_to": "File exported to: {path}",
+		"export_current_data": "Export Current Data",
+		"load_data_from_file": "Load Data from File",
+		"import_overwrite_confirmation": "Are you sure you want to overwrite current data?",
+		"export_secrets_confirmation": "Are you sure you want to export current data? Secrets will also be included in the file!",
+		"action_error": "Error: {error}",
+		"language": "Language",
+		"theme": "Theme",
+		"version": "Version",
+		"source_code": "Source Code"
+	},
+	"screens": {
+		"home": {
+			"title": "Home"
+		},
+		"devices": {
+			"title": "Devices"
+		},
+		"mesh": {
+			"title": "Mesh"
+		},
+		"settings": {
+			"title": "Settings",
+			"options": {
+				"groups": {
+					"common": "Common"
+				},
+				"languages": {
+					"en": "English",
+					"pl": "Polish"
+				},
+				"themes": {
+					"light": "Light",
+					"dark": "Dark",
+					"system": "System"
+				}
+			}
+		},
+		"about": {
+			"title": "About"
+		},
+		"connection_edit": {
+			"title": "Edit Connection"
+		}
+	}
+}
