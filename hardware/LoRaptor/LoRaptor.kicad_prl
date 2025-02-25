@@ -85,34 +85,10 @@
         "window": {
           "display": 0,
           "maximized": true,
-          "pos_x": 1080,
-          "pos_y": 290,
-          "size_x": 1920,
-          "size_y": 1038
-        }
-      },
-      {
-        "name": "LoRaptor.kicad_pcb",
-        "open": true,
-        "window": {
-          "display": 0,
-          "maximized": true,
-          "pos_x": 1080,
-          "pos_y": 290,
-          "size_x": 1920,
-          "size_y": 1038
-        }
-      },
-      {
-        "name": "LoRaptor.kicad_pro",
-        "open": false,
-        "window": {
-          "display": 0,
-          "maximized": true,
-          "pos_x": 1080,
-          "pos_y": 290,
-          "size_x": 850,
-          "size_y": 540
+          "pos_x": 0,
+          "pos_y": 0,
+          "size_x": 1080,
+          "size_y": 1920
         }
       }
     ]
