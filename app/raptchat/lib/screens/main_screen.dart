@@ -1,9 +1,13 @@
+// lib/screens/main_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:raptchat/localization/localization.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/widgets/custom_navigation_bar.dart';
-import 'package:raptchat/widgets/stream_list_item.dart';
+import 'package:raptchat/screens/connections_screen.dart';
+import 'package:raptchat/screens/devices_screen.dart';
+import 'package:raptchat/screens/mesh_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -87,90 +91,8 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // Build the Connections page.
-  Widget _buildConnectionsPage() {
-    return ValueListenableBuilder<Box<ConnectionElement>>(
-      valueListenable: Hive.box<ConnectionElement>('connection_elements').listenable(),
-      builder: (context, box, _) {
-        final elements = box.values.toList().cast<ConnectionElement>();
-        elements.sort((a, b) => a.order.compareTo(b.order));
-
-        if (elements.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.speaker_notes_off,
-                    size: 64, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(localizations.translate('labels.no_connections')),
-              ],
-            ),
-          );
-        }
-
-        return ReorderableListView(
-          buildDefaultDragHandles: false,
-          onReorder: (oldIndex, newIndex) async {
-            setState(() {
-              if (newIndex > oldIndex) newIndex--;
-              final element = elements.removeAt(oldIndex);
-              elements.insert(newIndex, element);
-              for (int i = 0; i < elements.length; i++) {
-                elements[i].order = i;
-              }
-            });
-            // Persist updated order to Hive after reordering.
-            Future.delayed(const Duration(milliseconds: 300), () async {
-              for (final element in elements) {
-                await element.save();
-              }
-            });
-          },
-          children: List.generate(
-            elements.length,
-            (index) {
-              final element = elements[index];
-              final isSelected = _selectedIndices.contains(index);
-              return StreamListItem(
-                key: ValueKey(element.key ?? element.name ?? index),
-                element: element,
-                isSelected: isSelected,
-                isSelectionMode: _isSelectionMode,
-                onTap: () {
-                  if (_isSelectionMode) {
-                    _toggleSelectItem(index);
-                  }
-                },
-                onEdit: () => _handleEdit(element),
-                onConnect: () => _handleConnect(element),
-                onLongPress: () => _toggleSelectionMode(index),
-                onCheckboxChanged: (value) => _toggleSelectItem(index),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  // Stub for the Devices page.
-  Widget _buildDevicesPage() {
-    return Center(
-      child: Text(localizations.translate('screens.devices.title')),
-    );
-  }
-
-  // Stub for the Mesh page.
-  Widget _buildMeshPage() {
-    return Center(
-      child: Text(localizations.translate('screens.mesh.title')),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Set the AppBar title based on the current tab and selection mode.
     String appBarTitle;
     if (_currentIndex == 0) {
       appBarTitle = _isSelectionMode
@@ -186,34 +108,51 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(appBarTitle),
-        actions: _currentIndex == 0 && _isSelectionMode
-            ? [
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () async {
-                    final box = Hive.box<ConnectionElement>('connection_elements');
-                    await _deleteSelectedItems(box);
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    setState(() {
-                      _isSelectionMode = false;
-                      _selectedIndices.clear();
-                    });
-                  },
-                ),
-              ]
+        actions: _currentIndex == 0
+            ? _isSelectionMode
+          ? [
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () async {
+            final box =
+                Hive.box<ConnectionElement>('connection_elements');
+            await _deleteSelectedItems(box);
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+            setState(() {
+              _isSelectionMode = false;
+              _selectedIndices.clear();
+            });
+                },
+              ),
+            ]
+          : [
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: () {
+            Navigator.pushNamed(context, '/settings');
+                },
+              ),
+            ]
             : null,
       ),
-      // Use an IndexedStack so that each page’s state is maintained.
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          _buildConnectionsPage(),
-          _buildDevicesPage(),
-          _buildMeshPage(),
+          ConnectionsScreen(
+            onEdit: _handleEdit,
+            onConnect: _handleConnect,
+            onCreate: _handleCreate,
+            isSelectionMode: _isSelectionMode,
+            selectedIndices: _selectedIndices,
+            onToggleSelectItem: _toggleSelectItem,
+            onToggleSelectionMode: _toggleSelectionMode,
+          ),
+          const DevicesScreen(),
+          const MeshScreen(),
         ],
       ),
       floatingActionButton: _currentIndex == 0 && !_isSelectionMode

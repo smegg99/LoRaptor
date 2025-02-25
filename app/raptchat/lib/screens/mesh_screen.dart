@@ -1,16 +1,16 @@
-// lib/pages/devices_page.dart
+// lib/pages/mesh_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:raptchat/localization/localization.dart';
 
-class DevicesScreen extends StatelessWidget {
-  const DevicesScreen({super.key});
+class MeshScreen extends StatelessWidget {
+  const MeshScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
     return Center(
-      child: Text(localizations.translate('screens.devices.title')),
+      child: Text(localizations.translate('screens.mesh.title')),
     );
   }
 }

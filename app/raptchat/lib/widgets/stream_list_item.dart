@@ -39,18 +39,33 @@ class _StreamListItemState extends State<StreamListItem> {
       onLongPress: widget.onLongPress,
       onDoubleTap: widget.onConnect,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 4.0),
         child: Row(
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    widget.element.name,
-                    style: theme.textTheme.titleMedium,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                  Row(
+                    children: [
+                      ReorderableDragStartListener(
+                        index: widget.element.order,
+                        child: GestureDetector(
+                          onTapDown: (_) => HapticFeedback.lightImpact(),
+                          child: Icon(Icons.drag_indicator,
+                              color: theme.colorScheme.tertiary),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          widget.element.name,
+                          style: theme.textTheme.titleMedium,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -71,16 +86,9 @@ class _StreamListItemState extends State<StreamListItem> {
                     onPressed: widget.onEdit,
                   ),
                   IconButton(
-                    icon: Icon(Icons.link, color: theme.colorScheme.secondary),
+                    icon: Icon(Icons.chevron_right,
+                        color: theme.colorScheme.secondary),
                     onPressed: widget.onConnect,
-                  ),
-                  ReorderableDragStartListener(
-                    index: widget.element.order,
-                    child: GestureDetector(
-                      onTapDown: (_) => HapticFeedback.lightImpact(),
-                      child: Icon(Icons.drag_indicator,
-                          color: theme.colorScheme.tertiary),
-                    ),
                   ),
                 ],
               ),

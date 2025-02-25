@@ -1,4 +1,4 @@
-(pcb freerouting.dsn
+(pcb "/home/karol/Documents/Repositories/LoRaptor/hardware/LoRaptor/temp-freerouting.dsn"
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

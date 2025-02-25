@@ -1,0 +1,1 @@
+idf_component_register(SRCS "usb_serial_device.c" INCLUDE_DIRS "." REQUIRES tinyusb)

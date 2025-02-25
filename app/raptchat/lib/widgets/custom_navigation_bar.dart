@@ -32,11 +32,7 @@ class CustomNavigationBar extends StatelessWidget {
         NavigationDestination(
           icon: const Icon(Icons.device_hub),
           label: localizations.translate('screens.mesh.title'),
-        ),
-        NavigationDestination(
-          icon: const Icon(Icons.settings),
-          label: localizations.translate('screens.settings.title'),
-        ),
+        )
       ],
     );
   }
