@@ -1,4 +1,3 @@
-// include/ble_comm.h
 #ifndef BLE_COMM_H
 #define BLE_COMM_H
 
@@ -7,8 +6,6 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
 
 class BLEComm : public CommunicationInterface {
 public:
@@ -25,17 +22,12 @@ public:
 
 	BLECharacteristic* getCharacteristic();
 
-	bool enqueueCommand(const String& cmd);
-	bool dequeueCommand(String& cmd);
-
 private:
 	BLECharacteristic* pTxCharacteristic;
 	ReceiveCallback _receiveCallback;
 	ConnectedCallback _connectedCallback;
 	DisconnectedCallback _disconnectedCallback;
 	WaitingForConnectionCallback _waitingForConnectionCallback;
-
-	QueueHandle_t _commandQueue;
 
 	class MyBLEServerCallbacks : public BLEServerCallbacks {
 	public:

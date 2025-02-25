@@ -21,6 +21,26 @@ RGBFeedback::RGBFeedback() : currentAction(nullptr), actionStartTime(0), idleSta
 		INTERP_EXPONENTIAL
 	};
 
+	defaults[ACTION_COMM_RECEIVED] = {
+		0.0f, 1.0f, 0.75f,
+		0.0f, 0.0f, 0.0f,
+		EFFECT_BLINK,
+		70,
+		100,
+		1.0f,
+		INTERP_LINEAR
+	};
+
+	defaults[ACTION_COMM_TRANSMITTED] = {
+		1.0f, 0.5f, 0.0f,
+		0.0f, 0.0f, 0.0f,
+		EFFECT_BLINK,
+		70,
+		100,
+		1.0f,
+		INTERP_LINEAR
+	};
+
 	defaults[ACTION_COMM_CONNECTED] = {
 		0.3f, 0.0f, 1.0f,
 		0.0f, 0.0f, 1.0f,

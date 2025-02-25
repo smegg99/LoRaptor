@@ -18,7 +18,7 @@
 #define RGB_B_PIN 21
 #endif
 
-// #define USE_SERIAL_COMM
+//#define USE_SERIAL_COMM
 #define SERIAL_BAUD_RATE 115200
 
 #define LORA_MISO 12

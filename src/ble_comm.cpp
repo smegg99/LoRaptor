@@ -1,21 +1,15 @@
-// src/ble_comm.cpp
 #include "ble_comm.h"
-#include "config.h" 
+#include "config.h"
 #include <esp_gap_ble_api.h>
 
 BLEComm::BLEComm() : pTxCharacteristic(nullptr),
 _receiveCallback(nullptr),
 _connectedCallback(nullptr),
 _disconnectedCallback(nullptr),
-_waitingForConnectionCallback(nullptr),
-_commandQueue(NULL) {
+_waitingForConnectionCallback(nullptr) {
 }
 
-BLEComm::~BLEComm() {
-	if (_commandQueue != NULL) {
-		vQueueDelete(_commandQueue);
-	}
-}
+BLEComm::~BLEComm() {}
 
 void BLEComm::init() {
 	BLEDevice::init(DEVICE_NAME);
@@ -60,8 +54,6 @@ void BLEComm::init() {
 
 	Serial.println("BLE NUS Service Started!");
 
-	_commandQueue = xQueueCreate(10, sizeof(String));
-
 	if (_waitingForConnectionCallback) {
 		_waitingForConnectionCallback();
 	}
@@ -96,24 +88,6 @@ BLECharacteristic* BLEComm::getCharacteristic() {
 	return pTxCharacteristic;
 }
 
-bool BLEComm::enqueueCommand(const String& cmd) {
-	if (_commandQueue != NULL) {
-		if (xQueueSend(_commandQueue, &cmd, portMAX_DELAY) == pdPASS) {
-			return true;
-		}
-	}
-	return false;
-}
-
-bool BLEComm::dequeueCommand(String& cmd) {
-	if (_commandQueue != NULL) {
-		if (xQueueReceive(_commandQueue, &cmd, portMAX_DELAY) == pdPASS) {
-			return true;
-		}
-	}
-	return false;
-}
-
 void BLEComm::MyBLEServerCallbacks::onConnect(BLEServer* pServer) {
 	Serial.println("BLE client connected");
 	if (_parent->_connectedCallback) {
@@ -132,12 +106,11 @@ void BLEComm::MyBLEServerCallbacks::onDisconnect(BLEServer* pServer) {
 void BLEComm::NUSCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	std::string rxValue = pCharacteristic->getValue();
 	if (!rxValue.empty()) {
-
 		String received = String(rxValue.c_str());
 		Serial.print("BLE Received: ");
 		Serial.println(received);
-		if (!_parent->enqueueCommand(received)) {
-			Serial.println("Failed to enqueue command");
+		if (_parent->_receiveCallback) {
+			_parent->_receiveCallback(received);
 		}
 	}
 }

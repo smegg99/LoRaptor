@@ -24,6 +24,23 @@ Dispatcher dispatcher;
 MeshManager meshManager;
 CommunicationInterface* commChannel = nullptr;
 
+QueueHandle_t commandQueue = NULL;
+
+void enqueueGlobalCommand(const String& cmd) {
+	if (commandQueue != NULL) {
+		if (xQueueSend(commandQueue, &cmd, 0) == pdPASS) {
+			Serial.print("Enqueued command: ");
+			Serial.println(cmd);
+		}
+		else {
+			Serial.println("Global queue: Failed to enqueue command");
+		}
+	}
+	else {
+		Serial.println("Global queue not created!");
+	}
+}
+
 #ifdef RGB_FEEDBACK_ENABLED
 void rgbTask(void* parameter) {
 	for (;;) {
@@ -33,18 +50,14 @@ void rgbTask(void* parameter) {
 }
 #endif
 
-#ifndef USE_SERIAL_COMM
 void commandProcessingTask(void* param) {
-	BLEComm* bleComm = (BLEComm*)param;
 	String cmd;
 	for (;;) {
-		if (bleComm->dequeueCommand(cmd)) {
+		if (xQueueReceive(commandQueue, &cmd, portMAX_DELAY) == pdPASS) {
 			processCommand(cmd);
 		}
-		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
 }
-#endif
 
 void setup() {
 
@@ -53,10 +66,13 @@ void setup() {
 	while (!Serial) {
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
-
 	static BLEComm bleComm;
 	commChannel = &bleComm;
 #else
+	Serial.begin(115200);
+	while (!Serial) {
+		vTaskDelay(10 / portTICK_PERIOD_MS);
+	}
 	static SerialComm serialComm;
 	commChannel = &serialComm;
 #endif
@@ -68,6 +84,14 @@ void setup() {
 	xTaskCreate(rgbTask, "RGBTask", 2048, NULL, 1, NULL);
 #endif
 
+	commandQueue = xQueueCreate(10, sizeof(String));
+	if (commandQueue == NULL) {
+		Serial.println("Failed to create global command queue!");
+	}
+	else {
+		Serial.println("Global command queue created.");
+	}
+
 	commChannel->init();
 
 #ifdef USE_SERIAL_COMM
@@ -77,6 +101,10 @@ void setup() {
 	BLECLIOutput bleOutput((BLEComm*)commChannel);
 	dispatcher.registerOutput(&bleOutput);
 #endif
+
+	commChannel->setReceiveCallback([] (const String& cmd) {
+		enqueueGlobalCommand(cmd);
+		});
 
 	commChannel->setConnectedCallback([] () {
 		Serial.println("Connected to communication channel.");
@@ -99,9 +127,7 @@ void setup() {
 
 	meshManager.init();
 
-#ifndef USE_SERIAL_COMM
-	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 8192, commChannel, 1, NULL);
-#endif
+	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 8192, NULL, 1, NULL);
 }
 
 void loop() {

@@ -17,7 +17,7 @@ public:
 	}
 
 	void println(const std::string& s) override {
-		bleComm->send(String(s.c_str() + '\n'));
+		bleComm->send(String(s.c_str()) + '\n');
 	}
 
 	void println() override {
