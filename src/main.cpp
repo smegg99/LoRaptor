@@ -1,5 +1,6 @@
 // src/main.cpp
 #include <Arduino.h>
+#include "driver/gpio.h"
 #include "config.h"
 
 #ifdef USE_SERIAL_COMM
@@ -20,6 +21,8 @@
 RGBFeedback rgbFeedback;
 #endif
 
+SPIClass hspi(HSPI);
+
 ConnectionManager connectionManager;
 Dispatcher dispatcher;
 MeshManager meshManager;
@@ -30,7 +33,6 @@ QueueHandle_t commandQueue = NULL;
 void enqueueGlobalCommand(const std::string& cmd) {
 	if (commandQueue != NULL) {
 		if (xQueueSend(commandQueue, &cmd, 0) == pdPASS) {
-			DEBUG_PRINT("Enqueued command: ");
 			DEBUG_PRINTLN(cmd.c_str());
 		}
 		else {
@@ -60,8 +62,14 @@ void commandProcessingTask(void* param) {
 	}
 }
 
-void setup() {
+void commProcessTask(void* parameter) {
+	for (;;) {
+		commChannel->process();
+		vTaskDelay(50 / portTICK_PERIOD_MS);
+	}
+}
 
+void setup() {
 #ifndef USE_SERIAL_COMM
 	Serial.begin(SERIAL_BAUD_RATE);
 	while (!Serial) {
@@ -70,13 +78,19 @@ void setup() {
 	static BLEComm bleComm;
 	commChannel = &bleComm;
 #else
-	Serial.begin(115200);
-	while (!Serial) {
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-	}
 	static SerialComm serialComm;
 	commChannel = &serialComm;
 #endif
+
+	esp_err_t err = gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
+	if (err == ESP_ERR_INVALID_STATE) {
+		DEBUG_PRINTLN("GPIO ISR service already installed. Continuing...");
+	}
+	else if (err != ESP_OK) {
+		DEBUG_PRINTLN("Failed to install GPIO ISR service: " + String(err));
+}
+
+	hspi.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
 
 	registerCommands();
 
@@ -85,7 +99,7 @@ void setup() {
 	xTaskCreate(rgbTask, "RGBTask", 2048, NULL, 1, NULL);
 #endif
 
-	commandQueue = xQueueCreate(10, sizeof(std::string));
+	commandQueue = xQueueCreate(COMMANDS_QUEUE_LENGTH, sizeof(std::string));
 	if (commandQueue == NULL) {
 		DEBUG_PRINTLN("Failed to create global command queue!");
 	}
@@ -104,6 +118,7 @@ void setup() {
 #endif
 
 	commChannel->setReceiveCallback([] (const std::string& cmd) {
+		DEBUG_PRINTLN("Received command: " + String(cmd.c_str()));
 		enqueueGlobalCommand(cmd);
 		});
 
@@ -128,7 +143,13 @@ void setup() {
 
 	meshManager.init();
 
+	meshManager.getLoRaComm()->setReceiveCallback([] (const std::string& msg) {
+		DEBUG_PRINTLN("Received LoRa message: " + String(msg.c_str()));
+		enqueueGlobalCommand(msg);
+		});
+
 	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 8192, NULL, 1, NULL);
+	xTaskCreate(commProcessTask, "CommProcessTask", 8192, NULL, 1, NULL);
 }
 
 void loop() {

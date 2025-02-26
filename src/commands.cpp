@@ -1,7 +1,9 @@
+// src/commands.cpp
 #include "config.h"
 #include "commands.h"
 #include "connection_manager.h"
 #include "RaptorCLI.h"
+#include "mesh_manager.h"
 
 #ifdef RGB_FEEDBACK_ENABLED
 #include "rgb_feedback.h"
@@ -10,6 +12,7 @@ extern RGBFeedback rgbFeedback;
 
 extern ConnectionManager connectionManager;
 extern Dispatcher dispatcher;
+extern MeshManager meshManager;
 
 void createConnectionCallback(const Command& cmd) {
 	std::string id(cmd.arguments[0].values[0].toCString());
@@ -27,8 +30,12 @@ void sendCallback(const Command& cmd) {
 	CLIOutput* output = dispatcher.getOutput();
 	std::string id(cmd.arguments[0].values[0].toCString());
 	std::string message(cmd.arguments[1].values[0].toCString());
+
 	std::string outMsg = connectionManager.prepareMessage(id, message);
+
 	output->println(("Sending on connection '" + id + "': " + outMsg).c_str());
+
+	meshManager.sendMessage(id, outMsg);
 }
 
 void listConnectionsCallback(const Command& cmd) {

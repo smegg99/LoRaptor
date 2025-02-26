@@ -1,3 +1,4 @@
+// src/ble_comm.h
 #include "ble_comm.h"
 #include "config.h"
 #include <esp_gap_ble_api.h>
@@ -107,7 +108,6 @@ void BLEComm::MyBLEServerCallbacks::onDisconnect(BLEServer* pServer) {
 void BLEComm::NUSCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	std::string rxValue = pCharacteristic->getValue();
 	if (!rxValue.empty()) {
-		DEBUG_PRINT("BLE Received: ");
 		DEBUG_PRINTLN(rxValue.c_str());
 		if (_parent->_receiveCallback) {
 			_parent->_receiveCallback(rxValue);

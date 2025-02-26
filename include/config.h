@@ -14,6 +14,12 @@
 #define DEBUG_PRINTLN(x)
 #endif
 
+#ifndef ESP_INTR_FLAG_DEFAULT
+#define ESP_INTR_FLAG_DEFAULT 0
+#endif
+
+#define COMMANDS_QUEUE_LENGTH 10
+
 #define DEVICE_NAME "LoRaptor"
 
 #define NUS_SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -30,7 +36,7 @@
 #define RGB_B_PIN 21
 #endif
 
-//#define USE_SERIAL_COMM
+#define USE_SERIAL_COMM
 #define SERIAL_BAUD_RATE 115200
 
 #define LORA_MISO 12

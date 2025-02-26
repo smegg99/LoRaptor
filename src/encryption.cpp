@@ -1,3 +1,4 @@
+// src/encryption.cpp
 #include "encryption.h"
 #include "mbedtls/aes.h"
 #include "mbedtls/base64.h"

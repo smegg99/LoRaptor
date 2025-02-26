@@ -1,3 +1,4 @@
+// include/encryption.h
 #ifndef ENCRYPTION_H
 #define ENCRYPTION_H
 
