@@ -50,7 +50,7 @@ void processCommand(const String& cmd) {
 	catch (std::exception& ex) {
 		CLIOutput* output = dispatcher.getOutput();
 		output->println("Error: " + std::string(ex.what()));
-		Serial.println(("Error: " + std::string(ex.what())).c_str());
+		DEBUG_PRINTLN(("Error: " + std::string(ex.what())).c_str());
 		rgbFeedback.setAction(ACTION_ERROR);
 	}
 }

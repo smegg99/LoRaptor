@@ -2,6 +2,16 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#ifdef DEBUG_MODE
+#define DEBUG_PRINT(x) Serial.print(x)
+#define DEBUG_PRINTF(x, ...) Serial.printf(x, __VA_ARGS__)
+#define DEBUG_PRINTLN(x) Serial.println(x)
+#else
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTF(x, ...)
+#define DEBUG_PRINTLN(x)
+#endif
+
 #define DEVICE_NAME "LoRaptor"
 
 #define NUS_SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"

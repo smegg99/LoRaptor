@@ -29,15 +29,15 @@ QueueHandle_t commandQueue = NULL;
 void enqueueGlobalCommand(const String& cmd) {
 	if (commandQueue != NULL) {
 		if (xQueueSend(commandQueue, &cmd, 0) == pdPASS) {
-			Serial.print("Enqueued command: ");
-			Serial.println(cmd);
+			DEBUG_PRINT("Enqueued command: ");
+			DEBUG_PRINTLN(cmd);
 		}
 		else {
-			Serial.println("Global queue: Failed to enqueue command");
+			DEBUG_PRINTLN("Global queue: Failed to enqueue command");
 		}
 	}
 	else {
-		Serial.println("Global queue not created!");
+		DEBUG_PRINTLN("Global queue not created!");
 	}
 }
 
@@ -86,10 +86,10 @@ void setup() {
 
 	commandQueue = xQueueCreate(10, sizeof(String));
 	if (commandQueue == NULL) {
-		Serial.println("Failed to create global command queue!");
+		DEBUG_PRINTLN("Failed to create global command queue!");
 	}
 	else {
-		Serial.println("Global command queue created.");
+		DEBUG_PRINTLN("Global command queue created.");
 	}
 
 	commChannel->init();
@@ -107,19 +107,19 @@ void setup() {
 		});
 
 	commChannel->setConnectedCallback([] () {
-		Serial.println("Connected to communication channel.");
+		DEBUG_PRINTLN("Connected to communication channel.");
 #ifdef RGB_FEEDBACK_ENABLED
 		rgbFeedback.setAction(ACTION_COMM_CONNECTED);
 #endif
 		});
 	commChannel->setDisconnectedCallback([] () {
-		Serial.println("Disconnected from communication channel.");
+		DEBUG_PRINTLN("Disconnected from communication channel.");
 #ifdef RGB_FEEDBACK_ENABLED
 		rgbFeedback.setAction(ACTION_COMM_DISCONNECTED);
 #endif
 		});
 	commChannel->setWaitingForConnectionCallback([] () {
-		Serial.println("Waiting for connection to communication channel...");
+		DEBUG_PRINTLN("Waiting for connection to communication channel...");
 #ifdef RGB_FEEDBACK_ENABLED
 		rgbFeedback.setAction(ACTION_COMM_WAITING);
 #endif

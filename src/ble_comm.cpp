@@ -52,7 +52,7 @@ void BLEComm::init() {
 	pAdvertising->setMinPreferred(0x12);
 	BLEDevice::startAdvertising();
 
-	Serial.println("BLE NUS Service Started!");
+	DEBUG_PRINTLN("BLE NUS Service Started!");
 
 	if (_waitingForConnectionCallback) {
 		_waitingForConnectionCallback();
@@ -89,14 +89,14 @@ BLECharacteristic* BLEComm::getCharacteristic() {
 }
 
 void BLEComm::MyBLEServerCallbacks::onConnect(BLEServer* pServer) {
-	Serial.println("BLE client connected");
+	DEBUG_PRINTLN("BLE client connected");
 	if (_parent->_connectedCallback) {
 		_parent->_connectedCallback();
 	}
 }
 
 void BLEComm::MyBLEServerCallbacks::onDisconnect(BLEServer* pServer) {
-	Serial.println("BLE client disconnected, restarting advertising");
+	DEBUG_PRINTLN("BLE client disconnected, restarting advertising");
 	pServer->getAdvertising()->start();
 	if (_parent->_disconnectedCallback) {
 		_parent->_disconnectedCallback();
@@ -107,8 +107,8 @@ void BLEComm::NUSCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	std::string rxValue = pCharacteristic->getValue();
 	if (!rxValue.empty()) {
 		String received = String(rxValue.c_str());
-		Serial.print("BLE Received: ");
-		Serial.println(received);
+		DEBUG_PRINT("BLE Received: ");
+		DEBUG_PRINTLN(received);
 		if (_parent->_receiveCallback) {
 			_parent->_receiveCallback(received);
 		}

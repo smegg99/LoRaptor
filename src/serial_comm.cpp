@@ -1,5 +1,6 @@
 // src/serial_comm.cpp
 #include "serial_comm.h"
+#include "config.h"
 
 SerialComm::SerialComm() : _receiveCallback(nullptr) {}
 SerialComm::~SerialComm() {}
@@ -9,7 +10,7 @@ void SerialComm::init() {
 	while (!Serial) {
 		vTaskDelay(10 / portTICK_PERIOD_MS);
 	}
-	Serial.println("Serial communication initialized");
+	DEBUG_PRINTLN("Serial communication initialized");
 
 	if (_connectedCallback) {
 		_connectedCallback();
@@ -17,7 +18,7 @@ void SerialComm::init() {
 }
 
 void SerialComm::send(const String& data) {
-	Serial.println(data);
+	DEBUG_PRINTLN(data);
 }
 
 void SerialComm::setReceiveCallback(ReceiveCallback callback) {

@@ -2,16 +2,16 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="109.89692"
-   height="31.293001"
-   viewBox="0 0 29.076893 8.2796069"
+   width="22.677164"
+   height="31.292999"
+   viewBox="0 0 5.9999996 8.2796064"
    version="1.1"
    id="svg1"
-   sodipodi:docname="LoRaptorTextLogo.svg"
-   inkscape:export-filename="LoRaptorTextLogo.png"
-   inkscape:export-xdpi="1500"
-   inkscape:export-ydpi="1500"
+   sodipodi:docname="LoRaptorLogo.svg"
    inkscape:version="1.3.2 (091e20e, 2023-11-25)"
+   inkscape:export-filename="LoRaptorLogo.png"
+   inkscape:export-xdpi="4300"
+   inkscape:export-ydpi="4300"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -25,9 +25,9 @@
      inkscape:pageopacity="0"
      inkscape:pagecheckerboard="1"
      inkscape:deskcolor="#505050"
-     inkscape:zoom="6.3514064"
-     inkscape:cx="37.31457"
-     inkscape:cy="16.453049"
+     inkscape:zoom="9.0994362"
+     inkscape:cx="-1.5935053"
+     inkscape:cy="9.7258773"
      inkscape:window-width="1920"
      inkscape:window-height="1006"
      inkscape:window-x="1080"
@@ -79,17 +79,5 @@
          style="display:inline;fill:#f9f9f9;stroke-width:0.167485;stroke-linecap:round;stroke-linejoin:bevel"
          d="m 227.9288,22.87079 c 0,0 -0.41655,1.053822 -1.01976,1.853748 -0.31739,0.4209 -0.69924,0.816101 -0.69924,1.383709 0,0.566006 0.37961,0.961024 0.69566,1.381023 0.60307,0.801434 1.02334,1.856435 1.02334,1.856435 0,0 0.41656,-1.053823 1.01977,-1.853749 0.31739,-0.420897 0.69924,-0.816101 0.69924,-1.383709 0,-0.566004 -0.37961,-0.961024 -0.69566,-1.381023 -0.60307,-0.801431 -1.02335,-1.856434 -1.02335,-1.856434 z" />
     </g>
-    <text
-       xml:space="preserve"
-       transform="matrix(0.65867194,0,0,0.65867194,148.12411,27.730626)"
-       id="text26"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:10.7118px;font-family:Zain;-inkscape-font-specification:Zain;text-align:center;white-space:pre;shape-inside:url(#rect26);display:inline;fill:#f9f9f9;stroke-width:18.8976;stroke-linecap:square;paint-order:stroke fill markers"><tspan
-         x="-31.075771"
-         y="-12.644009"
-         id="tspan6"><tspan
-           style="font-weight:800;-inkscape-font-specification:'Zain Ultra-Bold';letter-spacing:0px"
-           id="tspan4">LoRa</tspan><tspan
-           style="letter-spacing:0px;word-spacing:0px"
-           id="tspan5">ptor</tspan></tspan></text>
   </g>
 </svg>
