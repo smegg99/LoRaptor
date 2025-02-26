@@ -1,3 +1,4 @@
+// src/main.cpp
 #include <Arduino.h>
 #include "config.h"
 
@@ -26,11 +27,11 @@ CommunicationInterface* commChannel = nullptr;
 
 QueueHandle_t commandQueue = NULL;
 
-void enqueueGlobalCommand(const String& cmd) {
+void enqueueGlobalCommand(const std::string& cmd) {
 	if (commandQueue != NULL) {
 		if (xQueueSend(commandQueue, &cmd, 0) == pdPASS) {
 			DEBUG_PRINT("Enqueued command: ");
-			DEBUG_PRINTLN(cmd);
+			DEBUG_PRINTLN(cmd.c_str());
 		}
 		else {
 			DEBUG_PRINTLN("Global queue: Failed to enqueue command");
@@ -51,7 +52,7 @@ void rgbTask(void* parameter) {
 #endif
 
 void commandProcessingTask(void* param) {
-	String cmd;
+	std::string cmd;
 	for (;;) {
 		if (xQueueReceive(commandQueue, &cmd, portMAX_DELAY) == pdPASS) {
 			processCommand(cmd);
@@ -84,7 +85,7 @@ void setup() {
 	xTaskCreate(rgbTask, "RGBTask", 2048, NULL, 1, NULL);
 #endif
 
-	commandQueue = xQueueCreate(10, sizeof(String));
+	commandQueue = xQueueCreate(10, sizeof(std::string));
 	if (commandQueue == NULL) {
 		DEBUG_PRINTLN("Failed to create global command queue!");
 	}
@@ -102,7 +103,7 @@ void setup() {
 	dispatcher.registerOutput(&bleOutput);
 #endif
 
-	commChannel->setReceiveCallback([] (const String& cmd) {
+	commChannel->setReceiveCallback([] (const std::string& cmd) {
 		enqueueGlobalCommand(cmd);
 		});
 

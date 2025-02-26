@@ -1,13 +1,12 @@
-// include/comm_interface.h
 #ifndef COMM_INTERFACE_H
 #define COMM_INTERFACE_H
 
-#include <Arduino.h>
+#include <string>
 #include <functional>
 
 class CommunicationInterface {
 public:
-	typedef std::function<void(const String&)> ReceiveCallback;
+	typedef std::function<void(const std::string&)> ReceiveCallback;
 	typedef std::function<void()> ConnectedCallback;
 	typedef std::function<void()> DisconnectedCallback;
 	typedef std::function<void()> WaitingForConnectionCallback;
@@ -18,7 +17,7 @@ public:
 	virtual void init() = 0;
 
 	// Send data over the channel.
-	virtual void send(const String& data) = 0;
+	virtual void send(const std::string& data) = 0;
 
 	// Set the callback that is invoked when data is received.
 	virtual void setReceiveCallback(ReceiveCallback callback) = 0;

@@ -1,21 +1,20 @@
-// include/connection.h
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
-#include <Arduino.h>
+#include <string>
 
 class Connection {
 public:
-	Connection(const String& id, const String& key);
-	String getID() const;
-	String getKey() const;
+	Connection(const std::string& id, const std::string& key);
+	std::string getID() const;
+	std::string getKey() const;
 
-	String encrypt(const String& plaintext) const;
-	String decrypt(const String& ciphertext) const;
+	std::string encrypt(const std::string& plaintext) const;
+	std::string decrypt(const std::string& ciphertext) const;
 
 private:
-	String connectionID;
-	String key;
+	std::string connectionID;
+	std::string key;
 };
 
 #endif

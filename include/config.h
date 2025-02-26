@@ -2,7 +2,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define DEBUG_MODE
 #ifdef DEBUG_MODE
+#include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
 #define DEBUG_PRINTF(x, ...) Serial.printf(x, __VA_ARGS__)
 #define DEBUG_PRINTLN(x) Serial.println(x)

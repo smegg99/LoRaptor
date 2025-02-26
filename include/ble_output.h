@@ -1,27 +1,24 @@
-// include/ble_output.h
-#include "config.h"
+#ifndef BLE_OUTPUT_H
+#define BLE_OUTPUT_H
 
-#ifndef USE_SERIAL_COMM
-
-#include "RaptorCLI.h"
-#include <BLEDevice.h>
-#include <BLEUtils.h>
-#include <BLEServer.h>
+#include <string>
+#include "ble_comm.h"
+#include "clioutput.h"
 
 class BLECLIOutput : public CLIOutput {
 public:
 	BLECLIOutput(BLEComm* bleComm) : bleComm(bleComm) {}
 
-	void print(const std::string& s) override {
-		bleComm->send(String(s.c_str()));
+	virtual void print(const std::string& s) override {
+		bleComm->send(s);
 	}
 
-	void println(const std::string& s) override {
-		bleComm->send(String(s.c_str()) + '\n');
+	virtual void println(const std::string& s) override {
+		bleComm->send(s + "\n");
 	}
 
-	void println() override {
-		bleComm->send(String('\n'));
+	virtual void println() override {
+		bleComm->send("\n");
 	}
 
 private:

@@ -1,9 +1,8 @@
-// include/serial_comm.h
 #ifndef SERIAL_COMM_H
 #define SERIAL_COMM_H
 
 #include "comm_interface.h"
-#include <Arduino.h>
+#include <string>
 
 class SerialComm : public CommunicationInterface {
 public:
@@ -11,7 +10,7 @@ public:
 	virtual ~SerialComm();
 
 	void init() override;
-	void send(const String& data) override;
+	void send(const std::string& data) override;
 	void setReceiveCallback(ReceiveCallback callback) override;
 	void setConnectedCallback(ConnectedCallback callback) override;
 	void setDisconnectedCallback(DisconnectedCallback callback) override;

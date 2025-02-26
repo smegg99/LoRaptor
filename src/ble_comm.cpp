@@ -1,6 +1,7 @@
 #include "ble_comm.h"
 #include "config.h"
 #include <esp_gap_ble_api.h>
+#include <functional>
 
 BLEComm::BLEComm() : pTxCharacteristic(nullptr),
 _receiveCallback(nullptr),
@@ -48,7 +49,7 @@ void BLEComm::init() {
 	BLEAdvertising* pAdvertising = BLEDevice::getAdvertising();
 	pAdvertising->addServiceUUID(NUS_SERVICE_UUID);
 	pAdvertising->setScanResponse(false);
-	pAdvertising->setMinPreferred(0x06);  // Helps with iPhone connection issues.
+	pAdvertising->setMinPreferred(0x06);
 	pAdvertising->setMinPreferred(0x12);
 	BLEDevice::startAdvertising();
 
@@ -59,7 +60,7 @@ void BLEComm::init() {
 	}
 }
 
-void BLEComm::send(const String& data) {
+void BLEComm::send(const std::string& data) {
 	if (pTxCharacteristic) {
 		pTxCharacteristic->setValue(data.c_str());
 		pTxCharacteristic->notify();
@@ -106,11 +107,10 @@ void BLEComm::MyBLEServerCallbacks::onDisconnect(BLEServer* pServer) {
 void BLEComm::NUSCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	std::string rxValue = pCharacteristic->getValue();
 	if (!rxValue.empty()) {
-		String received = String(rxValue.c_str());
 		DEBUG_PRINT("BLE Received: ");
-		DEBUG_PRINTLN(received);
+		DEBUG_PRINTLN(rxValue.c_str());
 		if (_parent->_receiveCallback) {
-			_parent->_receiveCallback(received);
+			_parent->_receiveCallback(rxValue);
 		}
 	}
 }

@@ -6,6 +6,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+#include <string>
 
 class BLEComm : public CommunicationInterface {
 public:
@@ -13,7 +14,7 @@ public:
 	virtual ~BLEComm();
 
 	virtual void init() override;
-	virtual void send(const String& data) override;
+	virtual void send(const std::string& data) override;
 	virtual void setReceiveCallback(ReceiveCallback callback) override;
 	virtual void setConnectedCallback(ConnectedCallback callback) override;
 	virtual void setDisconnectedCallback(DisconnectedCallback callback) override;

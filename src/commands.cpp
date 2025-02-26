@@ -1,4 +1,3 @@
-// src/commands.cpp
 #include "config.h"
 #include "commands.h"
 #include "connection_manager.h"
@@ -13,24 +12,23 @@ extern ConnectionManager connectionManager;
 extern Dispatcher dispatcher;
 
 void createConnectionCallback(const Command& cmd) {
-	String id = String(cmd.arguments[0].values[0].toCString());
-	String key = String(cmd.arguments[1].values[0].toCString());
+	std::string id(cmd.arguments[0].values[0].toCString());
+	std::string key(cmd.arguments[1].values[0].toCString());
 	CLIOutput* output = dispatcher.getOutput();
 	if (connectionManager.createConnection(id, key)) {
-		output->println(("Connection '" + std::string(id.c_str()) + "' created.").c_str());
+		output->println(("Connection '" + id + "' created.").c_str());
 	}
 	else {
-		output->println(("Connection '" + std::string(id.c_str()) + "' already exists.").c_str());
+		output->println(("Connection '" + id + "' already exists.").c_str());
 	}
 }
 
 void sendCallback(const Command& cmd) {
 	CLIOutput* output = dispatcher.getOutput();
-	String id = String(cmd.arguments[0].values[0].toCString());
-	String message = String(cmd.arguments[1].values[0].toCString());
-	String outMsg = connectionManager.prepareMessage(id, message);
-	output->println(("Sending on connection '" + std::string(id.c_str()) + "': " + std::string(outMsg.c_str())).c_str());
-	// Here you would pass outMsg to your MeshManager to transmit.
+	std::string id(cmd.arguments[0].values[0].toCString());
+	std::string message(cmd.arguments[1].values[0].toCString());
+	std::string outMsg = connectionManager.prepareMessage(id, message);
+	output->println(("Sending on connection '" + id + "': " + outMsg).c_str());
 }
 
 void listConnectionsCallback(const Command& cmd) {
@@ -43,15 +41,17 @@ void helpCommandCallback(const Command& cmd) {
 	dispatcher.printGlobalHelp();
 }
 
-void processCommand(const String& cmd) {
+void processCommand(const std::string& cmd) {
 	try {
-		dispatcher.dispatch(std::string(cmd.c_str()));
+		dispatcher.dispatch(cmd);
 	}
 	catch (std::exception& ex) {
 		CLIOutput* output = dispatcher.getOutput();
-		output->println("Error: " + std::string(ex.what()));
+		output->println(("Error: " + std::string(ex.what())).c_str());
 		DEBUG_PRINTLN(("Error: " + std::string(ex.what())).c_str());
+#ifdef RGB_FEEDBACK_ENABLED
 		rgbFeedback.setAction(ACTION_ERROR);
+#endif
 	}
 }
 
@@ -68,14 +68,14 @@ void registerCommands() {
 	createCmd.callback = [] (const Command& cmd) {
 		CLIOutput* output = dispatcher.getOutput();
 		output->println("Create command executed.");
-	};
+		};
 	createCmd.registerOutput(output);
 
 	Command listCmd("list", "Lists all items");
 	listCmd.callback = [] (const Command& cmd) {
 		CLIOutput* output = dispatcher.getOutput();
 		output->println("List command executed.");
-	};
+		};
 	listCmd.registerOutput(output);
 
 	Command createConnectionCmd("connection", "Creates a new connection");

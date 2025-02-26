@@ -1,22 +1,21 @@
-// include/connection_manager.h
 #ifndef CONNECTION_MANAGER_H
 #define CONNECTION_MANAGER_H
 
-#include <Arduino.h>
+#include <string>
 #include <vector>
 #include "connection.h"
 
 class ConnectionManager {
 public:
 	ConnectionManager();
-	bool createConnection(const String& id, const String& key);
-	String prepareMessage(const String& id, const String& message);
-	String processIncoming(const String& id, const String& encryptedMessage);
-	String listConnections();
+	bool createConnection(const std::string& id, const std::string& key);
+	std::string prepareMessage(const std::string& id, const std::string& message);
+	std::string processIncoming(const std::string& id, const std::string& encryptedMessage);
+	std::string listConnections();
 
 private:
 	std::vector<Connection*> connections;
-	Connection* getConnection(const String& id);
+	Connection* getConnection(const std::string& id);
 };
 
 #endif
