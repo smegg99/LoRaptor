@@ -1,5 +1,5 @@
 // src/mesh_manager.cpp
-#include "rgb_feedback.h"
+#include "rgb/rgb_feedback.h"
 
 #ifdef RGB_FEEDBACK_ENABLED
 

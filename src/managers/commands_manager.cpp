@@ -1,12 +1,12 @@
-// src/commands.cpp
+// src/managers/commands_manager.cpp
 #include "config.h"
-#include "commands.h"
-#include "connection_manager.h"
+#include "managers/commands_manager.h"
+#include "managers/connection_manager.h"
 #include "RaptorCLI.h"
-#include "mesh_manager.h"
+#include "managers/mesh_manager.h"
 
 #ifdef RGB_FEEDBACK_ENABLED
-#include "rgb_feedback.h"
+#include "rgb/rgb_feedback.h"
 extern RGBFeedback rgbFeedback;
 #endif
 
@@ -28,14 +28,14 @@ void createConnectionCallback(const Command& cmd) {
 
 void sendCallback(const Command& cmd) {
 	CLIOutput* output = dispatcher.getOutput();
-	std::string id(cmd.arguments[0].values[0].toCString());
-	std::string message(cmd.arguments[1].values[0].toCString());
+	// std::string id(cmd.arguments[0].values[0].toCString());
+	std::string message(cmd.arguments[0].values[0].toCString());
 
-	std::string outMsg = connectionManager.prepareMessage(id, message);
+	std::string outMsg = connectionManager.prepareMessage("global", message);
 
-	output->println(("Sending on connection '" + id + "': " + outMsg).c_str());
+	output->println(("Sending on global: " + outMsg).c_str());
 
-	meshManager.sendMessage(id, outMsg);
+	meshManager.sendMessage("global", outMsg);
 }
 
 void listConnectionsCallback(const Command& cmd) {
@@ -93,8 +93,8 @@ void registerCommands() {
 	createCmd.addSubcommand(createConnectionCmd);
 
 	Command sendCmd("send", "Send a message on a connection");
-	sendCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
-	sendCmd.addArgSpec(ArgSpec("message", VAL_STRING, true, "Message"));
+	// sendCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
+	sendCmd.addArgSpec(ArgSpec("m", VAL_STRING, true, "Message"));
 	sendCmd.callback = sendCallback;
 	sendCmd.registerOutput(output);
 	dispatcher.registerCommand(sendCmd);
@@ -103,6 +103,14 @@ void registerCommands() {
 	listConnectionsCmd.callback = listConnectionsCallback;
 	listConnectionsCmd.registerOutput(output);
 	listCmd.addSubcommand(listConnectionsCmd);
+
+	Command pingCmd("ping", "Pings the system to check if it's responsive");
+	pingCmd.callback = [] (const Command& cmd) {
+		CLIOutput* output = dispatcher.getOutput();
+		output->println("pong!");
+	};
+	pingCmd.registerOutput(output);
+	dispatcher.registerCommand(pingCmd);
 
 	dispatcher.registerCommand(createCmd);
 	dispatcher.registerCommand(listCmd);

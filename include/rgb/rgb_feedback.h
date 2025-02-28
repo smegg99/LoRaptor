@@ -1,4 +1,4 @@
-// include/rgb_feedback.h
+// include/rgb/rgb_feedback.h
 #ifndef RGB_FEEDBACK_H
 #define RGB_FEEDBACK_H
 
@@ -8,7 +8,7 @@
 
 #include <Arduino.h>
 #include <vector>
-#include "rgb_action.h"
+#include "rgb/rgb_action.h"
 
 #define LEDC_TIMER     LEDC_TIMER_0
 #define LEDC_MODE      LEDC_LOW_SPEED_MODE

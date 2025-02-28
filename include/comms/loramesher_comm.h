@@ -1,8 +1,8 @@
-// include/loramesher_comm.h
+// include/comms/loramesher_comm.h
 #ifndef LORAMESHER_COMM_H
 #define LORAMESHER_COMM_H
 
-#include "comm_interface.h"
+#include "interfaces/comm_interface.h"
 #include "config.h"
 #include <string>
 #include <vector>
@@ -20,6 +20,7 @@ public:
 	virtual void setConnectedCallback(ConnectedCallback callback) override;
 	virtual void setDisconnectedCallback(DisconnectedCallback callback) override;
 	virtual void setWaitingForConnectionCallback(WaitingForConnectionCallback callback) override;
+	virtual void setTransmittedCallback(TransmittedCallback callback) override;
 	virtual void process() override;
 
 	LoraMesher& getRadio() { return radio; }
@@ -35,6 +36,7 @@ private:
 	ConnectedCallback _connectedCallback;
 	DisconnectedCallback _disconnectedCallback;
 	WaitingForConnectionCallback _waitingForConnectionCallback;
+	TransmittedCallback _transmittedCallback;
 
 	uint32_t getTransmitDelay();
 };

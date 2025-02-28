@@ -1,9 +1,9 @@
-// include/ble_output.h
+// include/interfaces/ble_output.h
 #ifndef BLE_OUTPUT_H
 #define BLE_OUTPUT_H
 
 #include <string>
-#include "ble_comm.h"
+#include "comms/ble_comm.h"
 #include "clioutput.h"
 
 class BLECLIOutput : public CLIOutput {

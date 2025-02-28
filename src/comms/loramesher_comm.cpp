@@ -1,5 +1,5 @@
-// src/loramesher_comm.cpp
-#include "loramesher_comm.h"
+// src/comms/loramesher_comm.cpp
+#include "comms/loramesher_comm.h"
 #include "Arduino.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
@@ -50,6 +50,10 @@ void LoRaMesherComm::send(const std::string& data) {
 
 	radio.createPacketAndSend(BROADCAST_ADDR, buffer.data(), static_cast<uint8_t>(buffer.size()));
 	DEBUG_PRINTLN(("LoRaMesher Sent: " + payload).c_str());
+
+	if (_transmittedCallback) {
+		_transmittedCallback();
+	}
 }
 
 void LoRaMesherComm::setReceiveCallback(ReceiveCallback callback) {
@@ -66,6 +70,10 @@ void LoRaMesherComm::setDisconnectedCallback(DisconnectedCallback callback) {
 
 void LoRaMesherComm::setWaitingForConnectionCallback(WaitingForConnectionCallback callback) {
 	_waitingForConnectionCallback = callback;
+}
+
+void LoRaMesherComm::setTransmittedCallback(TransmittedCallback callback) {
+	_transmittedCallback = callback;
 }
 
 static void processReceivedPacketsTask(void* parameter) {

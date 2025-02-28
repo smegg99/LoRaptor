@@ -4,20 +4,20 @@
 #include "config.h"
 
 #ifdef USE_SERIAL_COMM
-#include "serial_comm.h"
+#include "comms/serial_comm.h"
 #else
-#include "ble_comm.h"
-#include "ble_output.h"
+#include "comms/ble_comm.h"
+#include "interfaces/ble_output.h"
 #endif
 
-#include "comm_interface.h"
-#include "commands.h"
+#include "interfaces/comm_interface.h"
+#include "managers/commands_manager.h"
 #include "RaptorCLI.h"
-#include "connection_manager.h"
-#include "mesh_manager.h"
+#include "managers/connection_manager.h"
+#include "managers/mesh_manager.h"
 
 #ifdef RGB_FEEDBACK_ENABLED
-#include "rgb_feedback.h"
+#include "rgb/rgb_feedback.h"
 RGBFeedback rgbFeedback;
 #endif
 
@@ -27,7 +27,7 @@ ConnectionManager connectionManager;
 Dispatcher dispatcher;
 MeshManager meshManager;
 CommunicationInterface* commChannel = nullptr;
-
+LoRaMesherComm* loraComm = nullptr;
 QueueHandle_t commandQueue = NULL;
 
 void enqueueGlobalCommand(const std::string& cmd) {
@@ -69,6 +69,45 @@ void commProcessTask(void* parameter) {
 	}
 }
 
+void onReceiveCallback(const std::string& cmd) {
+	DEBUG_PRINTLN("Received command: " + String(cmd.c_str()));
+	enqueueGlobalCommand(cmd);
+}
+
+void onConnectedCallback() {
+	DEBUG_PRINTLN("Connected to communication channel.");
+#ifdef RGB_FEEDBACK_ENABLED
+	rgbFeedback.setAction(ACTION_COMM_CONNECTED);
+#endif
+}
+
+void onDisconnectedCallback() {
+	DEBUG_PRINTLN("Disconnected from communication channel.");
+#ifdef RGB_FEEDBACK_ENABLED
+	rgbFeedback.setAction(ACTION_COMM_DISCONNECTED);
+#endif
+}
+
+void onWaitingForConnectionCallback() {
+	DEBUG_PRINTLN("Waiting for connection to communication channel...");
+#ifdef RGB_FEEDBACK_ENABLED
+	rgbFeedback.setAction(ACTION_COMM_WAITING);
+#endif
+}
+
+void onLoRaConnectedCallback() {
+	rgbFeedback.setAction(ACTION_COMM_CONNECTED);
+}
+
+void onLoRaReceiveCallback(const std::string& msg) {
+	Serial.println("Received global message: " + String(msg.c_str()));
+	rgbFeedback.setAction(ACTION_COMM_RECEIVED);
+}
+
+void onLoRaTransmittedCallback() {
+	rgbFeedback.setAction(ACTION_COMM_TRANSMITTED);
+}
+
 void setup() {
 #ifndef USE_SERIAL_COMM
 	Serial.begin(SERIAL_BAUD_RATE);
@@ -88,7 +127,7 @@ void setup() {
 	}
 	else if (err != ESP_OK) {
 		DEBUG_PRINTLN("Failed to install GPIO ISR service: " + String(err));
-}
+	}
 
 	hspi.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
 
@@ -117,36 +156,16 @@ void setup() {
 	dispatcher.registerOutput(&bleOutput);
 #endif
 
-	commChannel->setReceiveCallback([] (const std::string& cmd) {
-		DEBUG_PRINTLN("Received command: " + String(cmd.c_str()));
-		enqueueGlobalCommand(cmd);
-		});
-
-	commChannel->setConnectedCallback([] () {
-		DEBUG_PRINTLN("Connected to communication channel.");
-#ifdef RGB_FEEDBACK_ENABLED
-		rgbFeedback.setAction(ACTION_COMM_CONNECTED);
-#endif
-		});
-	commChannel->setDisconnectedCallback([] () {
-		DEBUG_PRINTLN("Disconnected from communication channel.");
-#ifdef RGB_FEEDBACK_ENABLED
-		rgbFeedback.setAction(ACTION_COMM_DISCONNECTED);
-#endif
-		});
-	commChannel->setWaitingForConnectionCallback([] () {
-		DEBUG_PRINTLN("Waiting for connection to communication channel...");
-#ifdef RGB_FEEDBACK_ENABLED
-		rgbFeedback.setAction(ACTION_COMM_WAITING);
-#endif
-		});
+	commChannel->setReceiveCallback(onReceiveCallback);
+	commChannel->setConnectedCallback(onConnectedCallback);
+	commChannel->setDisconnectedCallback(onDisconnectedCallback);
+	commChannel->setWaitingForConnectionCallback(onWaitingForConnectionCallback);
 
 	meshManager.init();
-
-	meshManager.getLoRaComm()->setReceiveCallback([] (const std::string& msg) {
-		DEBUG_PRINTLN("Received LoRa message: " + String(msg.c_str()));
-		enqueueGlobalCommand(msg);
-		});
+	loraComm = meshManager.getLoRaComm();
+	loraComm->setConnectedCallback(onLoRaConnectedCallback);
+	loraComm->setReceiveCallback(onLoRaReceiveCallback);
+	loraComm->setTransmittedCallback(onLoRaTransmittedCallback);
 
 	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 8192, NULL, 1, NULL);
 	xTaskCreate(commProcessTask, "CommProcessTask", 8192, NULL, 1, NULL);

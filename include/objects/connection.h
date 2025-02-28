@@ -1,4 +1,4 @@
-// include/connection.h
+// include/objects/connection.h
 #ifndef CONNECTION_H
 #define CONNECTION_H
 

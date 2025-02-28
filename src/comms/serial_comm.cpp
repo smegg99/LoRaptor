@@ -1,8 +1,8 @@
-// src/serial_comm.cpp
+// src/comms/serial_comm.cpp
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
-#include "serial_comm.h"
+#include "comms/serial_comm.h"
 #include "config.h"
 #include <functional>
 
@@ -23,6 +23,9 @@ void SerialComm::init() {
 
 void SerialComm::send(const std::string& data) {
 	Serial.println(data.c_str());
+	if (_transmittedCallback) {
+		_transmittedCallback();
+	}
 }
 
 void SerialComm::setReceiveCallback(ReceiveCallback callback) {
@@ -39,6 +42,10 @@ void SerialComm::setDisconnectedCallback(DisconnectedCallback callback) {
 
 void SerialComm::setWaitingForConnectionCallback(WaitingForConnectionCallback callback) {
 	_waitingForConnectionCallback = callback;
+}
+
+void SerialComm::setTransmittedCallback(TransmittedCallback callback) {
+	_transmittedCallback = callback;
 }
 
 void SerialComm::process() {

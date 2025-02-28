@@ -1,6 +1,6 @@
-// include/commands.h
-#ifndef COMMANDS_H
-#define COMMANDS_H
+// include/managers/commands_manager.h
+#ifndef COMMANDS_MANAGER_H
+#define COMMANDS_MANAGER_H
 
 #include <string>
 

@@ -1,10 +1,10 @@
-// include/connection_manager.h
+// include/managers/connection_manager.h
 #ifndef CONNECTION_MANAGER_H
 #define CONNECTION_MANAGER_H
 
 #include <string>
 #include <vector>
-#include "connection.h"
+#include "objects/connection.h"
 
 class ConnectionManager {
 public:

@@ -1,6 +1,6 @@
 // src/connection.cpp
-#include "connection.h"
-#include "encryption.h"
+#include "objects/connection.h"
+#include "utils/encryption.h"
 
 Connection::Connection(const std::string& id, const std::string& key)
 	: connectionID(id), key(key) {

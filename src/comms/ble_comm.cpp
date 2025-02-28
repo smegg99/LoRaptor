@@ -1,5 +1,5 @@
-// src/ble_comm.h
-#include "ble_comm.h"
+// src/comms/ble_comm.h
+#include "comms/ble_comm.h"
 #include "config.h"
 #include <esp_gap_ble_api.h>
 #include <functional>
@@ -65,6 +65,10 @@ void BLEComm::send(const std::string& data) {
 	if (pTxCharacteristic) {
 		pTxCharacteristic->setValue(data.c_str());
 		pTxCharacteristic->notify();
+
+		if (_transmittedCallback) {
+			_transmittedCallback();
+		}
 	}
 }
 
@@ -82,6 +86,10 @@ void BLEComm::setDisconnectedCallback(DisconnectedCallback callback) {
 
 void BLEComm::setWaitingForConnectionCallback(WaitingForConnectionCallback callback) {
 	_waitingForConnectionCallback = callback;
+}
+
+void BLEComm::setTransmittedCallback(TransmittedCallback callback) {
+	_transmittedCallback = callback;
 }
 
 void BLEComm::process() {}

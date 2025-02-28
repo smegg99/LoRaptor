@@ -1,5 +1,5 @@
 // src/mesh_manager.cpp
-#include "mesh_manager.h"
+#include "managers/mesh_manager.h"
 #include "config.h"
 #include <Arduino.h>
 

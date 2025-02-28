@@ -1,4 +1,4 @@
-// include/rgb_action.h
+// include/rgb/rgb_action.h
 #ifndef RGB_ACTION_H
 #define RGB_ACTION_H
 

@@ -1,4 +1,4 @@
-// include/comm_interface.h
+// include/interfaces/comm_interface.h
 #ifndef COMM_INTERFACE_H
 #define COMM_INTERFACE_H
 
@@ -11,6 +11,7 @@ public:
 	typedef std::function<void()> ConnectedCallback;
 	typedef std::function<void()> DisconnectedCallback;
 	typedef std::function<void()> WaitingForConnectionCallback;
+	typedef std::function<void()> TransmittedCallback;
 
 	virtual ~CommunicationInterface() {}
 
@@ -31,6 +32,9 @@ public:
 
 	// Set the callback that is invoked when waiting for a connection.
 	virtual void setWaitingForConnectionCallback(WaitingForConnectionCallback callback) = 0;
+
+	// Set the callback that is invoked when data is transmitted.
+	virtual void setTransmittedCallback(TransmittedCallback callback) = 0;
 
 	virtual void process() {}
 };

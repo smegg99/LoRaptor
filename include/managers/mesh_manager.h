@@ -1,10 +1,10 @@
-// include/mesh_manager.h
+// include/managers/mesh_manager.h
 #ifndef MESH_MANAGER_H
 #define MESH_MANAGER_H
 
 #include <string>
 #include "config.h"
-#include "loramesher_comm.h"
+#include "comms/loramesher_comm.h"
 
 class MeshManager {
 public:

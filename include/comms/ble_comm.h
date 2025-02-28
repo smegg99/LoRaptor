@@ -1,8 +1,8 @@
-// include/ble_comm.h
+// include/comms/ble_comm.h
 #ifndef BLE_COMM_H
 #define BLE_COMM_H
 
-#include "comm_interface.h"
+#include "interfaces/comm_interface.h"
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -20,6 +20,7 @@ public:
 	virtual void setConnectedCallback(ConnectedCallback callback) override;
 	virtual void setDisconnectedCallback(DisconnectedCallback callback) override;
 	virtual void setWaitingForConnectionCallback(WaitingForConnectionCallback callback) override;
+	virtual void setTransmittedCallback(TransmittedCallback callback) override;
 	virtual void process() override;
 
 	BLECharacteristic* getCharacteristic();
@@ -30,6 +31,7 @@ private:
 	ConnectedCallback _connectedCallback;
 	DisconnectedCallback _disconnectedCallback;
 	WaitingForConnectionCallback _waitingForConnectionCallback;
+	TransmittedCallback _transmittedCallback;
 
 	class MyBLEServerCallbacks : public BLEServerCallbacks {
 	public:
