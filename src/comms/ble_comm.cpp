@@ -67,7 +67,7 @@ void BLEComm::send(const std::string& data) {
 		pTxCharacteristic->notify();
 
 		if (_transmittedCallback) {
-			_transmittedCallback();
+			_transmittedCallback(data);
 		}
 	}
 }

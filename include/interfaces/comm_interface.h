@@ -11,7 +11,7 @@ public:
 	typedef std::function<void()> ConnectedCallback;
 	typedef std::function<void()> DisconnectedCallback;
 	typedef std::function<void()> WaitingForConnectionCallback;
-	typedef std::function<void()> TransmittedCallback;
+	typedef std::function<void(const std::string&)> TransmittedCallback;
 
 	virtual ~CommunicationInterface() {}
 

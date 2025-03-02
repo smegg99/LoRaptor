@@ -27,7 +27,7 @@ ConnectionManager connectionManager;
 Dispatcher dispatcher;
 MeshManager meshManager;
 CommunicationInterface* commChannel = nullptr;
-LoRaMesherComm* loraComm = nullptr;
+LoRaMesherComm* loraMesherComm = nullptr;
 QueueHandle_t commandQueue = NULL;
 
 void enqueueGlobalCommand(const std::string& cmd) {
@@ -75,14 +75,14 @@ void onReceiveCallback(const std::string& cmd) {
 }
 
 void onConnectedCallback() {
-	DEBUG_PRINTLN("Connected to communication channel.");
+	DEBUG_PRINTLN("Connected to communication channel");
 #ifdef RGB_FEEDBACK_ENABLED
 	rgbFeedback.setAction(ACTION_COMM_CONNECTED);
 #endif
 }
 
 void onDisconnectedCallback() {
-	DEBUG_PRINTLN("Disconnected from communication channel.");
+	DEBUG_PRINTLN("Disconnected from communication channel");
 #ifdef RGB_FEEDBACK_ENABLED
 	rgbFeedback.setAction(ACTION_COMM_DISCONNECTED);
 #endif
@@ -96,16 +96,15 @@ void onWaitingForConnectionCallback() {
 }
 
 void onLoRaConnectedCallback() {
-	rgbFeedback.setAction(ACTION_COMM_CONNECTED);
+	rgbFeedback.setAction(ACTION_MESH_ACTIVE);
 }
 
 void onLoRaReceiveCallback(const std::string& msg) {
-	Serial.println("Received global message: " + String(msg.c_str()));
-	rgbFeedback.setAction(ACTION_COMM_RECEIVED);
+	rgbFeedback.enqueueAction(ACTION_COMM_RECEIVED);
 }
 
-void onLoRaTransmittedCallback() {
-	rgbFeedback.setAction(ACTION_COMM_TRANSMITTED);
+void onLoRaTransmittedCallback(const std::string& msg) {
+	rgbFeedback.enqueueAction(ACTION_COMM_TRANSMITTED);
 }
 
 void setup() {
@@ -123,15 +122,12 @@ void setup() {
 
 	esp_err_t err = gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
 	if (err == ESP_ERR_INVALID_STATE) {
-		DEBUG_PRINTLN("GPIO ISR service already installed. Continuing...");
-	}
-	else if (err != ESP_OK) {
 		DEBUG_PRINTLN("Failed to install GPIO ISR service: " + String(err));
+		rgbFeedback.setAction(ACTION_ERROR);
+		esp_restart();
 	}
 
 	hspi.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_CS);
-
-	registerCommands();
 
 #ifdef RGB_FEEDBACK_ENABLED
 	rgbFeedback.begin();
@@ -143,9 +139,13 @@ void setup() {
 		DEBUG_PRINTLN("Failed to create global command queue!");
 	}
 	else {
-		DEBUG_PRINTLN("Global command queue created.");
+		DEBUG_PRINTLN("Global command queue created");
 	}
 
+	commChannel->setReceiveCallback(onReceiveCallback);
+	commChannel->setConnectedCallback(onConnectedCallback);
+	commChannel->setDisconnectedCallback(onDisconnectedCallback);
+	commChannel->setWaitingForConnectionCallback(onWaitingForConnectionCallback);
 	commChannel->init();
 
 #ifdef USE_SERIAL_COMM
@@ -156,19 +156,16 @@ void setup() {
 	dispatcher.registerOutput(&bleOutput);
 #endif
 
-	commChannel->setReceiveCallback(onReceiveCallback);
-	commChannel->setConnectedCallback(onConnectedCallback);
-	commChannel->setDisconnectedCallback(onDisconnectedCallback);
-	commChannel->setWaitingForConnectionCallback(onWaitingForConnectionCallback);
-
+	loraMesherComm = meshManager.getLoRaComm();
+	loraMesherComm->setConnectedCallback(onLoRaConnectedCallback);
+	loraMesherComm->setReceiveCallback(onLoRaReceiveCallback);
+	loraMesherComm->setTransmittedCallback(onLoRaTransmittedCallback);
 	meshManager.init();
-	loraComm = meshManager.getLoRaComm();
-	loraComm->setConnectedCallback(onLoRaConnectedCallback);
-	loraComm->setReceiveCallback(onLoRaReceiveCallback);
-	loraComm->setTransmittedCallback(onLoRaTransmittedCallback);
+
+	registerCommands();
 
 	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 8192, NULL, 1, NULL);
-	xTaskCreate(commProcessTask, "CommProcessTask", 8192, NULL, 1, NULL);
+	xTaskCreate(commProcessTask, "CommProcessTask", 16384, NULL, 1, NULL);
 }
 
 void loop() {

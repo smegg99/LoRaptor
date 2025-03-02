@@ -24,7 +24,7 @@ void SerialComm::init() {
 void SerialComm::send(const std::string& data) {
 	Serial.println(data.c_str());
 	if (_transmittedCallback) {
-		_transmittedCallback();
+		_transmittedCallback(data);
 	}
 }
 

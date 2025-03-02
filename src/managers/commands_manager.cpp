@@ -43,6 +43,12 @@ void listConnectionsCallback(const Command& cmd) {
 	output->println(connectionManager.listConnections().c_str());
 }
 
+void listNodesCallback(const Command& cmd) {
+	// CLIOutput* output = dispatcher.getOutput();
+
+	meshManager.getConnectedNodes();
+}
+
 void helpCommandCallback(const Command& cmd) {
 	CLIOutput* output = dispatcher.getOutput();
 	dispatcher.printGlobalHelp();
@@ -63,6 +69,7 @@ void processCommand(const std::string& cmd) {
 }
 
 void registerCommands() {
+	DEBUG_PRINTLN("Registering commands...");
 	CLIOutput* output = dispatcher.getOutput();
 
 	Command helpCmd("help", "Displays help information for all commands.");
@@ -104,14 +111,68 @@ void registerCommands() {
 	listConnectionsCmd.registerOutput(output);
 	listCmd.addSubcommand(listConnectionsCmd);
 
+	Command listNodesCmd("nodes", "Lists all nodes");
+	listNodesCmd.callback = listNodesCallback;
+	listNodesCmd.registerOutput(output);
+	listCmd.addSubcommand(listNodesCmd);
+
 	Command pingCmd("ping", "Pings the system to check if it's responsive");
 	pingCmd.callback = [] (const Command& cmd) {
 		CLIOutput* output = dispatcher.getOutput();
 		output->println("pong!");
-	};
+		};
 	pingCmd.registerOutput(output);
 	dispatcher.registerCommand(pingCmd);
 
 	dispatcher.registerCommand(createCmd);
 	dispatcher.registerCommand(listCmd);
+
+	Command broadcastCmd("broadcast", "Broadcast a message");
+	broadcastCmd.addArgSpec(ArgSpec("recipients", VAL_LIST, true, "List of recipients"));
+	broadcastCmd.callback = [] (const Command& cmd) {
+		DEBUG_PRINTLN("Broadcast command executed");
+		for (const auto& arg : cmd.arguments) {
+			if (arg.name == "recipients" && !arg.values.empty() && arg.values[0].type == VAL_LIST) {
+				std::string recipients;
+				for (const auto& r : arg.values[0].listValue) {
+					recipients += r.stringValue + " ";
+				}
+				DEBUG_PRINTLN(recipients.c_str());
+			}
+		}
+		};
+	broadcastCmd.registerOutput(output);
+	dispatcher.registerCommand(broadcastCmd);
+
+	ExecutableCommand execBroadcast(broadcastCmd, {
+		{"recipients", Value(std::vector<Value>{ Value("John"), Value("Ambatukam") })}
+		});
+
+	ExecutableCommand sendExecCmd(sendCmd, { {"message", "Hello, World!"} });
+	DEBUG_PRINTLN(sendExecCmd.toString().c_str());
+
+	ExecutableCommand createConnectionExecCmd(createConnectionCmd, { {"id", "asdasdas"}, {"key", "true my nigga"} });
+	DEBUG_PRINTLN(createConnectionExecCmd.toString().c_str());
+
+	ExecutableCommand listConnectionsExecCmd(listConnectionsCmd, {});
+	DEBUG_PRINTLN(listConnectionsExecCmd.toString().c_str());
+
+	ExecutableCommand listNodesExecCmd(listNodesCmd, {});
+	DEBUG_PRINTLN(listNodesExecCmd.toString().c_str());
+
+	ExecutableCommand pingExecCmd(pingCmd, {});
+	DEBUG_PRINTLN(pingExecCmd.toString().c_str());
+
+	CommandSequence seq;
+	seq.addCommand(execBroadcast);
+	seq.addCommand(sendExecCmd);
+	seq.addCommand(createConnectionExecCmd);
+	seq.addCommand(listConnectionsExecCmd);
+	seq.addCommand(listNodesExecCmd);
+	seq.addCommand(pingExecCmd);
+
+	DEBUG_PRINTLN(seq.toString().c_str());
+	DEBUG_PRINTLN(seq.execute());
+
+	DEBUG_PRINTLN("Commands registered");
 }

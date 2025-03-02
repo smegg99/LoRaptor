@@ -13,6 +13,9 @@ public:
 	// Send an encrypted message via the mesh network.
 	void sendMessage(const std::string& connectionID, const std::string& payload);
 
+	// Get a list of connected nodes.
+	std::vector<std::string> getConnectedNodes();
+
 	LoRaMesherComm* getLoRaComm();
 
 private:

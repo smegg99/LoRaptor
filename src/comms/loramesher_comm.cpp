@@ -27,12 +27,17 @@ void LoRaMesherComm::init() {
 	cfg.loraIrq = LORA_DIO0;
 	cfg.loraIo1 = LORA_DIO1;
 	cfg.freq = 433.0;
+	cfg.bw = 125.0;
+	cfg.sf = 10;
+	cfg.cr = 5;
+	cfg.syncWord = 0x12;
+	cfg.power = 20;
 	cfg.module = LoraMesher::LoraModules::SX1278_MOD;
 	cfg.spi = &hspi;
 
 	radio.begin(cfg);
 	radio.start();
-	DEBUG_PRINTLN("LoRaMesher Service Started!");
+	DEBUG_PRINTLN("LoRaMesher Service started!");
 
 	if (_connectedCallback) {
 		_connectedCallback();
@@ -48,11 +53,13 @@ void LoRaMesherComm::send(const std::string& data) {
 	std::string payload = encryptPayload(data);
 	std::vector<uint8_t> buffer(payload.begin(), payload.end());
 
-	radio.createPacketAndSend(BROADCAST_ADDR, buffer.data(), static_cast<uint8_t>(buffer.size()));
-	DEBUG_PRINTLN(("LoRaMesher Sent: " + payload).c_str());
+	// radio.createPacketAndSend(BROADCAST_ADDR, buffer.data(), static_cast<uint8_t>(buffer.size()));
+	radio.sendReliablePacket(BROADCAST_ADDR, buffer.data(), static_cast<uint32_t>(buffer.size()));
+
+	DEBUG_PRINTLN(("LoRaMesher sent: " + payload).c_str());
 
 	if (_transmittedCallback) {
-		_transmittedCallback();
+		_transmittedCallback(payload);
 	}
 }
 
@@ -86,7 +93,7 @@ static void processReceivedPacketsTask(void* parameter) {
 			if (packet != nullptr) {
 				std::string received(reinterpret_cast<const char*>(packet->payload), packet->getPayloadLength());
 				std::string plaintext = comm->decryptPayload(received);
-				DEBUG_PRINTLN(("LoRaMesher Received: " + plaintext).c_str());
+				DEBUG_PRINTLN(("LoRaMesher received: " + plaintext).c_str());
 				if (comm->getReceiveCallback()) {
 					comm->getReceiveCallback()(plaintext);
 				}
@@ -98,7 +105,7 @@ static void processReceivedPacketsTask(void* parameter) {
 
 void LoRaMesherComm::startReceiveTask() {
 	TaskHandle_t handle = NULL;
-	int res = xTaskCreate(processReceivedPacketsTask, "LoRaRxTask", 4096, this, 2, &handle);
+	int res = xTaskCreate(processReceivedPacketsTask, "LoRaRxTask", 8192, this, 1, &handle);
 	if (res != pdPASS) {
 		DEBUG_PRINTLN("Failed to create LoRa receive task");
 	}
