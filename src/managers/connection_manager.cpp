@@ -1,36 +1,35 @@
 // src/connection_manager.cpp
 #include "managers/connection_manager.h"
+#include "config.h"
+#include <algorithm>
 
 ConnectionManager::ConnectionManager() {}
 
-bool ConnectionManager::createConnection(const std::string& id, const std::string& key) {
+bool ConnectionManager::createConnection(const std::string& id, const std::string& key, std::vector<uint16_t>& recipients) {
 	if (getConnection(id) != nullptr) return false;
-	connections.push_back(new Connection(id, key));
+	connections.push_back(new Connection(id, key, recipients));
 	return true;
 }
 
-std::string ConnectionManager::prepareMessage(const std::string& id, const std::string& message) {
-	Connection* conn = getConnection(id);
-	if (!conn) return message;
-	return conn->encrypt(message);
-}
-
-std::string ConnectionManager::processIncoming(const std::string& id, const std::string& encryptedMessage) {
-	Connection* conn = getConnection(id);
-	if (!conn) return encryptedMessage;
-	return conn->decrypt(encryptedMessage);
-}
-
-std::string ConnectionManager::listConnections() {
-	std::string list = "Connections:\n";
-	for (auto conn : connections) {
-		list += conn->getID() + " (Key: " + (conn->getKey().length() > 0 ? "set" : "not set") + ")\n";
+bool ConnectionManager::deleteConnection(const std::string& id) {
+	for (Connection* conn : connections) {
+		if (conn->getID() == id) {
+			connections.erase(std::remove(connections.begin(), connections.end(), conn), connections.end());
+			delete conn;
+			return true;
+		}
 	}
-	return list;
+	return false;
 }
 
-Connection* ConnectionManager::getConnection(const std::string& id) {
-	for (auto conn : connections) {
+std::vector<Connection*> ConnectionManager::getConnections() {
+	return connections;
+}
+
+Connection* ConnectionManager::getConnection(const std::string id) {
+	for (Connection* conn : connections) {
+		DEBUG_PRINTLN(("Checking connection: " + conn->getID()).c_str());
+		DEBUG_PRINTLN(conn->getID() == id);
 		if (conn->getID() == id) return conn;
 	}
 	return nullptr;

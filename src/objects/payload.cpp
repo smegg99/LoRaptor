@@ -1,0 +1,223 @@
+// src/objects/payload.cpp
+#include "objects/payload.h"
+#include "lib/lz4.h"
+#include <sstream>
+#include <string>
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include "mbedtls/aes.h"
+#include "mbedtls/base64.h"
+
+Payload::Payload() : epoch(0) {}
+
+std::string Payload::compressWithHeader(const std::string& input) {
+	int maxCompressedSize = LZ4_compressBound(input.size());
+	// Allocate space: 4 bytes for header + space for compressed data.
+	std::string compressed;
+	compressed.resize(4 + maxCompressedSize);
+
+	int compressedSize = LZ4_compress_default(
+		input.data(),       // Source data pointer.
+		&compressed[4],     // Leave first 4 bytes for header.
+		input.size(),       // Source size.
+		maxCompressedSize   // Maximum destination size.
+	);
+	if (compressedSize <= 0) {
+		return "";
+	}
+	// Write the original size into the first 4 bytes (big-endian).
+	uint32_t origSize = input.size();
+	compressed[0] = (origSize >> 24) & 0xFF;
+	compressed[1] = (origSize >> 16) & 0xFF;
+	compressed[2] = (origSize >> 8) & 0xFF;
+	compressed[3] = origSize & 0xFF;
+	// Resize the string to header (4 bytes) + actual compressed data.
+	compressed.resize(4 + compressedSize);
+	return compressed;
+}
+
+std::string Payload::decompressWithHeader(const std::string& input) {
+	if (input.size() < 4) {
+		return "";
+	}
+	// Extract the original size from the 4-byte header (big-endian).
+	uint32_t origSize = ((unsigned char)input[0] << 24) |
+		((unsigned char)input[1] << 16) |
+		((unsigned char)input[2] << 8) |
+		((unsigned char)input[3]);
+	std::string decompressed;
+	decompressed.resize(origSize);
+
+	int decompressedSize = LZ4_decompress_safe(
+		input.data() + 4,   // Skip the header.
+		&decompressed[0],   // Destination buffer.
+		input.size() - 4,   // Size of the compressed data.
+		origSize            // Expected decompressed size.
+	);
+	if (decompressedSize < 0) {
+		return "";
+	}
+	return decompressed;
+}
+
+static void prepareAESKey(const std::string& key, unsigned char outputKey[16]) {
+	memset(outputKey, 0, 16);
+	int len = key.length();
+	if (len > 16) {
+		len = 16;
+	}
+	memcpy(outputKey, key.c_str(), len);
+}
+
+std::string Payload::encryptMessageInternal(const std::string& key, const std::string& plaintext) {
+	if (key.empty()) {
+		return plaintext;
+	}
+	unsigned char aesKey[16];
+	prepareAESKey(key, aesKey);
+
+	mbedtls_aes_context aes;
+	mbedtls_aes_init(&aes);
+	if (mbedtls_aes_setkey_enc(&aes, aesKey, 128) != 0) {
+		mbedtls_aes_free(&aes);
+		return "";
+	}
+	unsigned char iv[16] = { 0 };
+
+	const char* pt = plaintext.c_str();
+	size_t ptLen = plaintext.length();
+
+	// Apply PKCS#7 padding.
+	size_t pad = 16 - (ptLen % 16);
+	size_t paddedLen = ptLen + pad;
+	unsigned char* paddedInput = new unsigned char[paddedLen];
+	memcpy(paddedInput, pt, ptLen);
+	for (size_t i = ptLen; i < paddedLen; i++) {
+		paddedInput[i] = pad;
+	}
+
+	unsigned char* outputBuf = new unsigned char[paddedLen];
+	memset(outputBuf, 0, paddedLen);
+
+	if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_ENCRYPT, paddedLen, iv, paddedInput, outputBuf) != 0) {
+		mbedtls_aes_free(&aes);
+		delete[] paddedInput;
+		delete[] outputBuf;
+		return "";
+	}
+	mbedtls_aes_free(&aes);
+	delete[] paddedInput;
+
+	size_t olen = 0;
+	size_t b64Len = ((paddedLen + 2) / 3) * 4 + 1;
+	unsigned char* b64Buf = new unsigned char[b64Len];
+	if (mbedtls_base64_encode(b64Buf, b64Len, &olen, outputBuf, paddedLen) != 0) {
+		delete[] outputBuf;
+		delete[] b64Buf;
+		return "";
+	}
+	delete[] outputBuf;
+	std::string cipherText(reinterpret_cast<char*>(b64Buf), olen);
+	delete[] b64Buf;
+	return cipherText;
+}
+
+std::string Payload::decryptMessageInternal(const std::string& key, const std::string& ciphertext) {
+	if (key.empty()) {
+		return ciphertext;
+	}
+	unsigned char aesKey[16];
+	prepareAESKey(key, aesKey);
+
+	mbedtls_aes_context aes;
+	mbedtls_aes_init(&aes);
+	if (mbedtls_aes_setkey_dec(&aes, aesKey, 128) != 0) {
+		mbedtls_aes_free(&aes);
+		return "";
+	}
+	unsigned char iv[16] = { 0 };
+
+	size_t decodedLen = 0;
+	size_t b64MaxLen = ciphertext.length();
+	unsigned char* decodedBuf = new unsigned char[b64MaxLen];
+	if (mbedtls_base64_decode(decodedBuf, b64MaxLen, &decodedLen,
+		reinterpret_cast<const unsigned char*>(ciphertext.c_str()),
+		ciphertext.length()) != 0) {
+		mbedtls_aes_free(&aes);
+		delete[] decodedBuf;
+		return "";
+	}
+
+	unsigned char* outputBuf = new unsigned char[decodedLen];
+	memset(outputBuf, 0, decodedLen);
+
+	if (mbedtls_aes_crypt_cbc(&aes, MBEDTLS_AES_DECRYPT, decodedLen, iv, decodedBuf, outputBuf) != 0) {
+		mbedtls_aes_free(&aes);
+		delete[] decodedBuf;
+		delete[] outputBuf;
+		return "";
+	}
+	mbedtls_aes_free(&aes);
+	delete[] decodedBuf;
+
+	// Remove PKCS#7 padding.
+	size_t unpaddedLen = decodedLen;
+	if (decodedLen > 0) {
+		uint8_t pad = outputBuf[decodedLen - 1];
+		if (pad <= 16) {
+			unpaddedLen = decodedLen - pad;
+		}
+	}
+	std::string plainText(reinterpret_cast<char*>(outputBuf), unpaddedLen);
+	delete[] outputBuf;
+	return plainText;
+}
+
+bool Payload::encode(const std::string& encryptionKey, std::string& encodedOut) const {
+	// Build the payload string in the format: "publicWord|epoch|message"
+	std::ostringstream oss;
+	oss << publicWord << "|" << epoch << "|" << message;
+	std::string payloadStr = oss.str();
+
+	std::string compressed = compressWithHeader(payloadStr);
+	if (compressed.empty()) {
+		return false;
+	}
+	encodedOut = encryptMessageInternal(encryptionKey, compressed);
+	return !encodedOut.empty();
+}
+
+bool Payload::decode(const std::string& encryptedCompressedData, const std::string& encryptionKey, Payload& pOut) {
+	std::string decryptedCompressed = decryptMessageInternal(encryptionKey, encryptedCompressedData);
+	if (decryptedCompressed.empty()) {
+		return false;
+	}
+	std::string decompressedPayload = decompressWithHeader(decryptedCompressed);
+	if (decompressedPayload.empty()) {
+		return false;
+	}
+	// Expected format: "publicWord|epoch|message"
+	size_t pos1 = decompressedPayload.find('|');
+	if (pos1 == std::string::npos) {
+		return false;
+	}
+	std::string pubWord = decompressedPayload.substr(0, pos1);
+	size_t pos2 = decompressedPayload.find('|', pos1 + 1);
+	if (pos2 == std::string::npos) {
+		return false;
+	}
+	std::string epochStr = decompressedPayload.substr(pos1 + 1, pos2 - pos1 - 1);
+	std::string msg = decompressedPayload.substr(pos2 + 1);
+
+	std::istringstream iss(epochStr);
+	uint32_t ep;
+	if (!(iss >> ep)) {
+		return false;
+	}
+
+	pOut.publicWord = pubWord;
+	pOut.epoch = ep;
+	pOut.message = msg;
+	return true;
+}

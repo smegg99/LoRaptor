@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define DEBUG_MODE
+// #define DEBUG_MODE
 #ifdef DEBUG_MODE
 #include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -21,6 +21,7 @@
 #define COMMANDS_QUEUE_LENGTH 10
 
 #define DEVICE_NAME "LoRaptor"
+#define PUBLIC_WORD "LORAPTOR"
 
 #define DEVICE_VID 0x1209
 #define DEVICE_PID 0x2077
@@ -30,6 +31,7 @@
 #define NUS_TX_CHARACTERISTIC_UUID "6E400003-B5A3-F393-E0A9-E50E24DCCA9E" // Device -> Client
 
 #define RESERVED_COMMAND_PREFIX "/"
+#define RESERVED_EXECUTABLE_COMMAND_PREFIX "!"
 
 #define RGB_FEEDBACK_ENABLED
 #ifdef RGB_FEEDBACK_ENABLED
@@ -54,5 +56,16 @@
 #define LORA_DIO3 18
 #define LORA_DIO4 35
 #define LORA_DIO5 36
+
+#define ERROR_CONN_NOT_FOUND "error.conn.not_found"
+#define ERROR_CONN_EXISTS "error.conn.exists"
+#define ERROR_CONN_NO_RECIPIENTS "error.conn.no_recipients"
+#define ERROR_CONN_CANNOT_CREATE "error.conn.cannot_create"
+#define ERROR_CMD_ERROR "error.cmd.error"
+
+#define MSG_CONN_CREATED "msg.conn.created"
+#define MSG_CONN_DELETED "msg.conn.deleted"
+#define MSG_RECIPIENT_ADDED "msg.recipient.added"
+#define MSG_RECIPIENT_REMOVED "msg.recipient.removed"
 
 #endif

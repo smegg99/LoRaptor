@@ -9,14 +9,12 @@
 class ConnectionManager {
 public:
 	ConnectionManager();
-	bool createConnection(const std::string& id, const std::string& key);
-	std::string prepareMessage(const std::string& id, const std::string& message);
-	std::string processIncoming(const std::string& id, const std::string& encryptedMessage);
-	std::string listConnections();
-
+	bool createConnection(const std::string& id, const std::string& key, std::vector<uint16_t>& recipients);
+	bool deleteConnection(const std::string& id);
+	Connection* getConnection(const std::string id);
+	std::vector<Connection*> getConnections();
 private:
 	std::vector<Connection*> connections;
-	Connection* getConnection(const std::string& id);
-};
+};;
 
 #endif

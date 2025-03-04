@@ -45,18 +45,23 @@ void LoRaMesherComm::init() {
 }
 
 void LoRaMesherComm::send(const std::string& data) {
-	uint32_t delayMs = getTransmitDelay();
-	if (delayMs > 0) {
-		vTaskDelay(delayMs / portTICK_PERIOD_MS);
-	}
-
-	std::string payload = encryptPayload(data);
+	std::string payload = data;
 	std::vector<uint8_t> buffer(payload.begin(), payload.end());
 
-	// radio.createPacketAndSend(BROADCAST_ADDR, buffer.data(), static_cast<uint8_t>(buffer.size()));
-	radio.sendReliablePacket(BROADCAST_ADDR, buffer.data(), static_cast<uint32_t>(buffer.size()));
+	radio.createPacketAndSend(BROADCAST_ADDR, buffer.data(), static_cast<uint8_t>(buffer.size()));
+	DEBUG_PRINTLN(("sent: " + payload + " to: " + std::to_string(BROADCAST_ADDR)).c_str());
 
-	DEBUG_PRINTLN(("LoRaMesher sent: " + payload).c_str());
+	if (_transmittedCallback) {
+		_transmittedCallback(payload);
+	}
+}
+
+void LoRaMesherComm::sendTo(uint16_t address, const std::string& preparedPayload) {
+	std::string payload = preparedPayload;
+	std::vector<uint8_t> buffer(payload.begin(), payload.end());
+
+	radio.sendReliablePacket(address, buffer.data(), static_cast<uint32_t>(buffer.size()));
+	DEBUG_PRINTLN(("sent: " + payload + " to: " + std::to_string(address)).c_str());
 
 	if (_transmittedCallback) {
 		_transmittedCallback(payload);
@@ -92,7 +97,7 @@ static void processReceivedPacketsTask(void* parameter) {
 			AppPacket<uint8_t>* packet = comm->getRadio().getNextAppPacket<uint8_t>();
 			if (packet != nullptr) {
 				std::string received(reinterpret_cast<const char*>(packet->payload), packet->getPayloadLength());
-				std::string plaintext = comm->decryptPayload(received);
+				std::string plaintext = received;
 				DEBUG_PRINTLN(("LoRaMesher received: " + plaintext).c_str());
 				if (comm->getReceiveCallback()) {
 					comm->getReceiveCallback()(plaintext);
@@ -117,14 +122,6 @@ void LoRaMesherComm::startReceiveTask() {
 uint32_t LoRaMesherComm::getTransmitDelay() {
 	uint64_t chipId = ESP.getEfuseMac();
 	return static_cast<uint32_t>(chipId % 100);
-}
-
-std::string LoRaMesherComm::encryptPayload(const std::string& plaintext) {
-	return plaintext;
-}
-
-std::string LoRaMesherComm::decryptPayload(const std::string& ciphertext) {
-	return ciphertext;
 }
 
 void LoRaMesherComm::process() {}

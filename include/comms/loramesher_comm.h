@@ -26,10 +26,8 @@ public:
 	LoraMesher& getRadio() { return radio; }
 	ReceiveCallback getReceiveCallback() const { return _receiveCallback; }
 
+	void sendTo(uint16_t address, const std::string& data);
 	void startReceiveTask();
-
-	std::string encryptPayload(const std::string& plaintext);
-	std::string decryptPayload(const std::string& ciphertext);
 private:
 	LoraMesher& radio;
 	ReceiveCallback _receiveCallback;

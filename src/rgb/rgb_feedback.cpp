@@ -11,6 +11,8 @@
 extern RGBFeedback rgbFeedback;
 #endif
 
+// TODO: Fix the issue with the idle animation not being continued from the previous moment after a new action is set.
+
 // Helper: Apply an interpolation curve to t (0.0 to 1.0) based on style.
 static inline float applyInterpolation(float t, InterpolationStyle style) {
 	switch (style) {
