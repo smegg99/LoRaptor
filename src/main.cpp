@@ -100,6 +100,8 @@ void onLoRaConnectedCallback() {
 }
 
 void onLoRaReceiveCallback(const std::string& msg) {
+	DEBUG_PRINTLN("Received LoRa message: " + String(msg.c_str()));
+	connectionManager.processIncomingMessage(msg);
 	rgbFeedback.enqueueAction(ACTION_COMM_RECEIVED);
 }
 
@@ -164,7 +166,7 @@ void setup() {
 
 	registerCommands();
 
-	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 8192, NULL, 1, NULL);
+	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 16384, NULL, 1, NULL);
 	xTaskCreate(commProcessTask, "CommProcessTask", 16384, NULL, 1, NULL);
 }
 

@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// #define DEBUG_MODE
+#define DEBUG_MODE
 #ifdef DEBUG_MODE
 #include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -18,10 +18,12 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 #endif
 
-#define COMMANDS_QUEUE_LENGTH 10
+#define COMMANDS_QUEUE_LENGTH 16
+#define MESSAGE_BUFFER_SIZE 64
 
 #define DEVICE_NAME "LoRaptor"
 #define PUBLIC_WORD "LORAPTOR"
+
 
 #define DEVICE_VID 0x1209
 #define DEVICE_PID 0x2077

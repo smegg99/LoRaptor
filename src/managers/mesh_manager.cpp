@@ -17,6 +17,10 @@ void MeshManager::init() {
 }
 
 void MeshManager::sendMessage(Connection* connection, const std::string& preparedPayload) {
+	DEBUG_PRINTLN("Sending message to recipients...");
+	DEBUG_PRINTLN(("Payload size: " + std::to_string(preparedPayload.length()) + " bytes").c_str());
+	DEBUG_PRINTLN(("Payload content sample: " + (preparedPayload.length() > 20 ? preparedPayload.substr(0, 20) + "..." : preparedPayload)).c_str());
+	DEBUG_PRINTLN(("Sending to " + std::to_string(connection->getRecipients().size()) + " recipients").c_str());
 	std::vector<uint16_t> recipients = connection->getRecipients();
 	if (recipients.empty()) {
 		executeErrorCommand(ERROR_CONN_NO_RECIPIENTS);
@@ -31,7 +35,7 @@ std::vector<std::uint16_t> MeshManager::getConnectedNodes() {
 	std::vector<std::uint16_t> connectedNodes;
 	LoraMesher& radio = loraComm.getRadio();
 	LM_LinkedList<RouteNode>* routingTableList = radio.routingTableListCopy();
-	
+
 	routingTableList->setInUse();
 
 	for (int i = 0; i < radio.routingTableSize(); i++) {

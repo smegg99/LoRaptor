@@ -7,6 +7,6 @@ hardware/LoRaptor/LoRaptor-backups
 hardware/LoRaptor/freerouting.dsn
 hardware/LoRaptor/temp-freerouting.dsn
 build
-lib/lz4
 lib/LoRaMesher
 lib/RaptorCLI
+lib/smaz2

@@ -1,63 +1,77 @@
 // src/objects/payload.cpp
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "smaz2.h"
+#ifdef __cplusplus
+}
+#endif
 #include "objects/payload.h"
-#include "lib/lz4.h"
 #include <sstream>
 #include <string>
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <vector>
+#include "config.h"
 #include "mbedtls/aes.h"
 #include "mbedtls/base64.h"
 
-Payload::Payload() : epoch(0) {}
+Payload::Payload(std::string publicWord, uint32_t epoch, std::string message)
+	: publicWord(publicWord), epoch(epoch), message(message) {
+}
 
+// Compress the input string using Smaz2.
+// A 4-byte header (big-endian) is prepended to store the original uncompressed size.
 std::string Payload::compressWithHeader(const std::string& input) {
-	int maxCompressedSize = LZ4_compressBound(input.size());
-	// Allocate space: 4 bytes for header + space for compressed data.
-	std::string compressed;
-	compressed.resize(4 + maxCompressedSize);
+	uint32_t origSize = input.size();
 
-	int compressedSize = LZ4_compress_default(
-		input.data(),       // Source data pointer.
-		&compressed[4],     // Leave first 4 bytes for header.
-		input.size(),       // Source size.
-		maxCompressedSize   // Maximum destination size.
-	);
-	if (compressedSize <= 0) {
+	// Smaz2 is optimized for very short strings. For safety, allocate an output buffer
+	// that is twice the size of the input
+	size_t out_buf_size = input.size() * 2;
+	std::vector<char> out_buf(out_buf_size, 0);
+
+	std::vector<char> input_copy(input.begin(), input.end());
+	size_t compressedSize = smaz2_compress(
+		reinterpret_cast<unsigned char*>(out_buf.data()), out_buf_size,
+		reinterpret_cast<unsigned char*>(input_copy.data()), input.size());
+	if (compressedSize == 0) {
 		return "";
 	}
-	// Write the original size into the first 4 bytes (big-endian).
-	uint32_t origSize = input.size();
+
+	// Build the final string: first 4 bytes = original size (big-endian), then the compressed data.
+	std::string compressed;
+	compressed.resize(4 + compressedSize);
 	compressed[0] = (origSize >> 24) & 0xFF;
 	compressed[1] = (origSize >> 16) & 0xFF;
 	compressed[2] = (origSize >> 8) & 0xFF;
 	compressed[3] = origSize & 0xFF;
-	// Resize the string to header (4 bytes) + actual compressed data.
-	compressed.resize(4 + compressedSize);
+	memcpy(&compressed[4], out_buf.data(), compressedSize);
+
 	return compressed;
 }
 
+// Decompress the data using Smaz2.
+// Reads the 4-byte header to determine the expected uncompressed size.
 std::string Payload::decompressWithHeader(const std::string& input) {
 	if (input.size() < 4) {
 		return "";
 	}
-	// Extract the original size from the 4-byte header (big-endian).
 	uint32_t origSize = ((unsigned char)input[0] << 24) |
 		((unsigned char)input[1] << 16) |
 		((unsigned char)input[2] << 8) |
 		((unsigned char)input[3]);
-	std::string decompressed;
-	decompressed.resize(origSize);
+	size_t compressed_len = input.size() - 4;
 
-	int decompressedSize = LZ4_decompress_safe(
-		input.data() + 4,   // Skip the header.
-		&decompressed[0],   // Destination buffer.
-		input.size() - 4,   // Size of the compressed data.
-		origSize            // Expected decompressed size.
-	);
-	if (decompressedSize < 0) {
+	std::vector<char> compressed_data(input.begin() + 4, input.end());
+	std::vector<char> out_buf(origSize + 1, 0);
+	size_t decompressedSize = smaz2_decompress(
+		reinterpret_cast<unsigned char*>(out_buf.data()), out_buf.size(),
+		reinterpret_cast<unsigned char*>(compressed_data.data()), compressed_len);
+	if (decompressedSize == 0) {
 		return "";
 	}
+	std::string decompressed(out_buf.data(), decompressedSize);
 	return decompressed;
 }
 
@@ -120,6 +134,9 @@ std::string Payload::encryptMessageInternal(const std::string& key, const std::s
 	delete[] outputBuf;
 	std::string cipherText(reinterpret_cast<char*>(b64Buf), olen);
 	delete[] b64Buf;
+
+	DEBUG_PRINTLN(("Encrypted message: " + cipherText).c_str());
+
 	return cipherText;
 }
 
@@ -180,10 +197,22 @@ bool Payload::encode(const std::string& encryptionKey, std::string& encodedOut) 
 	oss << publicWord << "|" << epoch << "|" << message;
 	std::string payloadStr = oss.str();
 
+	DEBUG_PRINTLN(("Encoding payload: " + payloadStr).c_str());
+
 	std::string compressed = compressWithHeader(payloadStr);
 	if (compressed.empty()) {
 		return false;
 	}
+
+	DEBUG_PRINTLN(("Compressed payload: " + compressed).c_str());
+
+	size_t originalSize = payloadStr.size();
+	size_t compressedSize = compressed.size() - 4; // Subtract the 4-byte header
+	float compressionRatio = 100.0f * (1.0f - static_cast<float>(compressedSize) / originalSize);
+	DEBUG_PRINTLN(("Compression: Original size=" + std::to_string(originalSize) + 
+				  " bytes, Compressed size=" + std::to_string(compressedSize) + 
+				  " bytes, Saved " + std::to_string(compressionRatio) + "%").c_str());
+	
 	encodedOut = encryptMessageInternal(encryptionKey, compressed);
 	return !encodedOut.empty();
 }

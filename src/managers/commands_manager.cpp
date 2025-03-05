@@ -106,8 +106,6 @@ void sendCallback(const Command& cmd) {
 	}
 
 	std::string preparedMessage = c->prepareMessage(message);
-
-	DEBUG_PRINTLN(("Sending message on connection " + c->getID() + ": " + message).c_str());
 	meshManager.sendMessage(c, preparedMessage);
 }
 
@@ -156,94 +154,70 @@ void processCommand(const std::string& cmd) {
 }
 
 void registerCommands() {
-	DEBUG_PRINTLN("Registering commands...");
 	CLIOutput* output = dispatcher.getOutput();
 
-	Command helpCmd("help", "Displays help information for all commands.");
+	// --- General Commands ---
+	Command helpCmd("help", "Displays help information for all commands.", output, helpCommandCallback);
 	helpCmd.addAlias("?");
-	helpCmd.callback = helpCommandCallback;
-	helpCmd.registerOutput(output);
 	dispatcher.registerCommand(helpCmd);
 
-	Command createCmd("create", "Creates a new item");
-	createCmd.registerOutput(output);
+	// --- CRUD Commands ---
+	Command createCmd("create", "Creates a new item", output);
+	Command updateCmd("update", "Updates an item", output);
+	Command deleteCmd("delete", "Deletes an item", output);
+	Command listCmd("list", "Lists all items", output);
 
-	Command updateCmd("update", "Updates an item");
-	updateCmd.registerOutput(output);
-
-	Command deleteCmd("delete", "Deletes an item");
-	deleteCmd.registerOutput(output);
-
-	Command listCmd("list", "Lists all items");
-	listCmd.registerOutput(output);
-
-	Command createConnectionCmd("connection", "Creates a new connection");
+	// --- Connection Commands (as subcommands) ---
+	Command createConnectionCmd("connection", "Creates a new connection", output, createConnectionCallback);
 	createConnectionCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
 	createConnectionCmd.addArgSpec(ArgSpec("k", VAL_STRING, true, "Connection key"));
 	createConnectionCmd.addArgSpec(ArgSpec("r", VAL_LIST, true, "Recipient IDs"));
-	createConnectionCmd.callback = createConnectionCallback;
-	createConnectionCmd.registerOutput(output);
 	createCmd.addSubcommand(createConnectionCmd);
 
-	Command deleteConnectionCmd("connection", "Deletes a connection");
+	Command deleteConnectionCmd("connection", "Deletes a connection", output, deleteConnectionCallback);
 	deleteConnectionCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
-	deleteConnectionCmd.callback = deleteConnectionCallback;
-	deleteConnectionCmd.registerOutput(output);
 	deleteCmd.addSubcommand(deleteConnectionCmd);
 
-	Command createConnectionRecipientCmd("connectionRecipient", "Adds a recipient to a connection");
-	createConnectionRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
-	createConnectionRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
-	createConnectionRecipientCmd.callback = addRecipientCallback;
-	createConnectionRecipientCmd.registerOutput(output);
-	createCmd.addSubcommand(createConnectionRecipientCmd);
+	Command addRecipientCmd("connectionRecipient", "Adds a recipient to a connection", output, addRecipientCallback);
+	addRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
+	addRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
+	createCmd.addSubcommand(addRecipientCmd);
 
-	Command deleteConnectionRecipientCmd("connectionRecipient", "Removes a recipient from a connection");
-	deleteConnectionRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
-	deleteConnectionRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
-	deleteConnectionRecipientCmd.callback = removeRecipientCallback;
-	deleteConnectionRecipientCmd.registerOutput(output);
-	deleteCmd.addSubcommand(deleteConnectionRecipientCmd);
+	Command removeRecipientCmd("connectionRecipient", "Removes a recipient from a connection", output, removeRecipientCallback);
+	removeRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
+	removeRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
+	deleteCmd.addSubcommand(removeRecipientCmd);
 
-	Command sendCmd("send", "Send a message on a connection");
+	// --- Messaging ---
+	Command sendCmd("send", "Send a message on a connection", output, sendCallback);
 	sendCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
 	sendCmd.addArgSpec(ArgSpec("m", VAL_STRING, true, "Message"));
-	sendCmd.callback = sendCallback;
-	sendCmd.registerOutput(output);
 	dispatcher.registerCommand(sendCmd);
 
-	Command listConnectionsCmd("connections", "Lists all connections");
-	listConnectionsCmd.callback = listConnectionsCallback;
-	listConnectionsCmd.registerOutput(output);
+	// --- Listing ---
+	Command listConnectionsCmd("connections", "Lists all connections", output, listConnectionsCallback);
 	listCmd.addSubcommand(listConnectionsCmd);
 
-	Command listNodesCmd("nodes", "Lists all nodes");
-	listNodesCmd.callback = listNodesCallback;
-	listNodesCmd.registerOutput(output);
+	Command listNodesCmd("nodes", "Lists all nodes", output, listNodesCallback);
 	listCmd.addSubcommand(listNodesCmd);
 
-	Command getCmd("get", "Gets a value");
-	getCmd.registerOutput(output);
-
-	Command getNodeIDCmd("nodeid", "Gets the node ID");
-	getNodeIDCmd.callback = [] (const Command& cmd) {
-		CLIOutput* output = dispatcher.getOutput();
-		output->println(std::to_string(meshManager.getLocalAddress()));
-		};
-	getNodeIDCmd.registerOutput(output);
+	// --- Value Commands ---
+	Command getCmd("get", "Gets a value", output);
+	Command getNodeIDCmd("nodeid", "Gets the node ID", output, [] (const Command& cmd) {
+		CLIOutput* out = dispatcher.getOutput();
+		out->println(std::to_string(meshManager.getLocalAddress()));
+		});
 	getCmd.addSubcommand(getNodeIDCmd);
 
-	Command setCmd("set", "Sets a value");
-	setCmd.registerOutput(output);
+	Command setCmd("set", "Sets a value", output);
 
-	Command pingCmd("ping", "Pings the system to check if it's responsive");
-	pingCmd.callback = [] (const Command& cmd) {
-		CLIOutput* output = dispatcher.getOutput();
+	// --- Miscellaneous ---
+	Command pingCmd("ping", "Pings the system to check if it's responsive", output, [] (const Command& cmd) {
 		executeReturnCommand("pong");
-		};
-	pingCmd.registerOutput(output);
+		});
 	dispatcher.registerCommand(pingCmd);
 
+	// --- Final Registration ---
 	dispatcher.registerCommand(createCmd);
 	dispatcher.registerCommand(updateCmd);
 	dispatcher.registerCommand(deleteCmd);
@@ -251,37 +225,27 @@ void registerCommands() {
 	dispatcher.registerCommand(getCmd);
 	dispatcher.registerCommand(setCmd);
 
-	Command errCmd("error", "Generates an error");
+	// --- Special Executable Commands ---
+	Command errCmd("error", "Generates an error", output, [] (const Command& cmd) {
+		CLIOutput* out = dispatcher.getOutput();
+		out->println(cmd.arguments[0].values[0].toCString());
+		});
 	errCmd.addArgSpec(ArgSpec("m", VAL_STRING, true, "Error message"));
-	errCmd.callback = [] (const Command& cmd) {
-		CLIOutput* output = dispatcher.getOutput();
-		output->println(cmd.arguments[0].values[0].toCString());
-		};
-	errCmd.registerOutput(output);
-
 	errExecCmd = ExecutableCommand(errCmd, { {"m", {Value("")}} });
 
-	Command returnCmd("return", "Returns a value");
+	Command returnCmd("return", "Returns a value", output, [] (const Command& cmd) {
+		CLIOutput* out = dispatcher.getOutput();
+		out->println(cmd.arguments[0].values[0].toCString());
+		});
 	returnCmd.addArgSpec(ArgSpec("v", VAL_STRING, true, "Return value"));
-	returnCmd.callback = [] (const Command& cmd) {
-		CLIOutput* output = dispatcher.getOutput();
-		output->println(cmd.arguments[0].values[0].toCString());
-		};
-	returnCmd.registerOutput(output);
-
 	returnExecCmd = ExecutableCommand(returnCmd, { {"v", {Value("")}} });
 
-	Command readyCmd("ready", "Indicates that the system is ready");
-	readyCmd.callback = [] (const Command& cmd) {
-		CLIOutput* output = dispatcher.getOutput();
+	Command readyCmd("ready", "Indicates that the system is ready", output, [] (const Command& cmd) {
 		executeReturnCommand("ready");
-		};
-	readyCmd.registerOutput(output);
-
-	readyExecCmd = ExecutableCommand(readyCmd, {});	
+		});
+	readyExecCmd = ExecutableCommand(readyCmd, {});
 	listExecCmd = ExecutableCommand(listCmd, {});
 
-	DEBUG_PRINTLN("Commands registered");
-
+	// Execute "ready" to signal that registration is complete.
 	readyExecCmd.execute();
 }

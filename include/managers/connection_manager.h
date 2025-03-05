@@ -13,6 +13,10 @@ public:
 	bool deleteConnection(const std::string& id);
 	Connection* getConnection(const std::string id);
 	std::vector<Connection*> getConnections();
+
+	// Processes an incoming message and forwards it to the correct connection.
+	// Processing outgoing messages is done by the connection itself.
+	void processIncomingMessage(const std::string& message);
 private:
 	std::vector<Connection*> connections;
 };;

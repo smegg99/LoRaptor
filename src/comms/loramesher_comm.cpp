@@ -47,7 +47,6 @@ void LoRaMesherComm::init() {
 void LoRaMesherComm::send(const std::string& data) {
 	std::string payload = data;
 	std::vector<uint8_t> buffer(payload.begin(), payload.end());
-
 	radio.createPacketAndSend(BROADCAST_ADDR, buffer.data(), static_cast<uint8_t>(buffer.size()));
 	DEBUG_PRINTLN(("sent: " + payload + " to: " + std::to_string(BROADCAST_ADDR)).c_str());
 
