@@ -48,7 +48,7 @@ void enqueueGlobalCommand(const std::string& cmd) {
 void rgbTask(void* parameter) {
 	for (;;) {
 		rgbFeedback.update();
-		vTaskDelay(10 / portTICK_PERIOD_MS);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 #endif
@@ -65,7 +65,14 @@ void commandProcessingTask(void* param) {
 void commProcessTask(void* parameter) {
 	for (;;) {
 		commChannel->process();
-		vTaskDelay(50 / portTICK_PERIOD_MS);
+		vTaskDelay(100 / portTICK_PERIOD_MS);
+	}
+}
+
+void outgoingMessageTask(void* parameter) {
+	for (;;) {
+		connectionManager.processOutgoingMessages();
+		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
 
@@ -99,9 +106,9 @@ void onLoRaConnectedCallback() {
 	rgbFeedback.setAction(ACTION_MESH_ACTIVE);
 }
 
-void onLoRaReceiveCallback(const std::string& msg) {
-	DEBUG_PRINTLN("Received LoRa message: " + String(msg.c_str()));
-	connectionManager.processIncomingMessage(msg);
+void onLoRaReceiveFromCallback(const std::string& msg, const uint16_t senderNodeID) {
+	DEBUG_PRINTLN("Received LoRa message: " + String(msg.c_str()) + " from node " + String(senderNodeID));
+	connectionManager.processIncomingMessage(msg, senderNodeID);
 	rgbFeedback.enqueueAction(ACTION_COMM_RECEIVED);
 }
 
@@ -160,14 +167,15 @@ void setup() {
 
 	loraMesherComm = meshManager.getLoRaComm();
 	loraMesherComm->setConnectedCallback(onLoRaConnectedCallback);
-	loraMesherComm->setReceiveCallback(onLoRaReceiveCallback);
+	loraMesherComm->setReceiveFromCallback(onLoRaReceiveFromCallback);
 	loraMesherComm->setTransmittedCallback(onLoRaTransmittedCallback);
 	meshManager.init();
 
 	registerCommands();
 
-	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 16384, NULL, 1, NULL);
-	xTaskCreate(commProcessTask, "CommProcessTask", 16384, NULL, 1, NULL);
+	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 32768, NULL, 1, NULL);
+	xTaskCreate(commProcessTask, "CommProcessTask", 32768, NULL, 1, NULL);
+	xTaskCreate(outgoingMessageTask, "OutgoingMessageTask", 32768, NULL, 1, NULL);
 }
 
 void loop() {

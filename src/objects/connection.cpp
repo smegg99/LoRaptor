@@ -2,13 +2,18 @@
 #include "objects/connection.h"
 #include "objects/payload.h"
 #include "objects/message.h"
+#include "managers/connection_manager.h"
 #include "config.h"
 #include <algorithm>
 #include <chrono>
 #include <time.h>
+#include <LoraMesher.h>
 
-Connection::Connection(const std::string& id, const std::string& key, std::vector<uint16_t>& recipients)
-	: connectionID(id), key(key), recipients(recipients) {
+extern ConnectionManager connectionManager;
+
+Connection::Connection(const std::string& id, const std::string& key, std::vector<uint16_t>& recipients, LoRaMesherComm* comm)
+	: connectionID(id), key(key), recipients(recipients), comm(comm) {
+	outgoingMutex = xSemaphoreCreateMutex();
 }
 
 std::string Connection::getID() const {
@@ -19,26 +24,22 @@ std::string Connection::getKey() const {
 	return key;
 }
 
-std::string Connection::prepareMessage(const std::string& message) const {
+Payload Connection::preparePayload(const std::string& message) const {
 	DEBUG_PRINTLN(("Preparing message for connection: " + connectionID).c_str());
-	Payload p(connectionID, 0, message);
+	time_t now = time(0);
+	uint32_t epoch = static_cast<uint32_t>(now);
+	Payload p(connectionID, epoch, message);
 	std::string encoded;
 	if (!p.encode(key, encoded)) {
-		return "";
+		return Payload();
 	}
-	DEBUG_PRINTLN("Prepared message successfully");
-	DEBUG_PRINTLN(("Payload contents - Connection ID: " + p.getPublicWord() +
-		", Epoch: " + std::to_string(p.getEpoch()) +
-		", Message size: " + std::to_string(message.length()) + " bytes").c_str());
-	return encoded;
-}
 
-std::string Connection::processMessage(const std::string& message) const {
-	Payload p;
-	if (!Payload::decode(message, key, p)) {
-		return "";
-	}
-	return p.getMessage();
+	Payload encodedPayload(connectionID, epoch, encoded, PayloadType::MESSAGE);
+	DEBUG_PRINTLN("Prepared message successfully");
+	DEBUG_PRINTLN(("Payload contents - Connection ID: " + encodedPayload.getPublicWord() +
+		", Epoch: " + std::to_string(encodedPayload.getEpoch()) +
+		", Message size: " + std::to_string(encoded.size()) + " bytes").c_str());
+	return encodedPayload;
 }
 
 void Connection::addRecipient(uint16_t recipientID) {
@@ -53,21 +54,65 @@ std::vector<uint16_t> Connection::getRecipients() const {
 	return recipients;
 }
 
-void Connection::storeMessage(const Message& msg) {
-	DEBUG_PRINTLN(("Storing payload in buffer for connection " + connectionID +
+void Connection::storeIncomingMessage(const Message& msg) {
+	DEBUG_PRINTLN(("Storing incoming message in buffer for connection " + connectionID +
 		", time: " + std::to_string(msg.getEpoch()) +
+		", sender ID: " + std::to_string(msg.getSenderNodeID()) +
 		", message: " + msg.getContent()).c_str());
-	if (messageBuffer.size() >= MESSAGE_BUFFER_SIZE) {
-		messageBuffer.erase(messageBuffer.begin());
-		DEBUG_PRINTLN(("Message buffer full for connection " + connectionID + ". Oldest message removed.").c_str());
+	if (incomingMessages.size() >= MESSAGE_BUFFER_SIZE) {
+		incomingMessages.erase(incomingMessages.begin());
+		DEBUG_PRINTLN(("Incoming message buffer full for connection " + connectionID + ". Oldest message removed.").c_str());
 	}
-	messageBuffer.push_back(msg);
+	incomingMessages.push_back(msg);
 	DEBUG_PRINTLN(("Stored payload in buffer for connection " + connectionID).c_str());
 }
 
-std::vector<Message> Connection::flushMessages() {
-	DEBUG_PRINTLN(("Flushing message buffer for connection " + connectionID + ", messages count: " + std::to_string(messageBuffer.size())).c_str());
-	std::vector<Message> flushed = messageBuffer;
-	messageBuffer.clear();
+void Connection::storeOutgoingMessage(const Message& msg) {
+	if (xSemaphoreTake(outgoingMutex, portMAX_DELAY) == pdTRUE) {
+		if (outgoingMessages.size() >= MESSAGE_BUFFER_SIZE) {
+			outgoingMessages.erase(outgoingMessages.begin());
+			DEBUG_PRINTLN(("Outgoing message buffer full for connection " + connectionID + ". Oldest message removed.").c_str());
+		}
+		outgoingMessages.push_back(msg);
+		DEBUG_PRINTLN(("Stored outgoing payload in buffer for connection " + connectionID + ", hash: " + msg.getHash()).c_str());
+		xSemaphoreGive(outgoingMutex);
+	}
+}
+
+void Connection::acknowledgeMessage(const std::string& msgHash) {
+	if (xSemaphoreTake(outgoingMutex, portMAX_DELAY) == pdTRUE) {
+		for (auto& msg : outgoingMessages) {
+			if (!msg.isAcknowledged() && msg.getHash() == msgHash) {
+				msg.markAsAcknowledged();
+				DEBUG_PRINTLN(("Message acknowledged: " + msgHash).c_str());
+			}
+		}
+		xSemaphoreGive(outgoingMutex);
+	}
+}
+
+void Connection::sendACK(uint16_t senderNodeID, const std::string& msgHash) {
+	time_t now = time(0);
+	uint32_t epoch = static_cast<uint32_t>(now);
+	Payload ackPayload(connectionID, epoch, msgHash, PayloadType::ACK);
+	std::string encodedACK;
+	if (!ackPayload.encode(key, encodedACK)) {
+		DEBUG_PRINTLN("Failed to encode ACK payload");
+		return;
+	}
+	if (comm) {
+		comm->sendTo(senderNodeID, encodedACK);
+		DEBUG_PRINTLN(("Sent ACK to node " + std::to_string(senderNodeID) + " for message " + msgHash).c_str());
+	}
+}
+
+std::vector<Message> Connection::flushIncomingMessages() {
+	DEBUG_PRINTLN(("Flushing incoming message buffer for connection " + connectionID + ", messages count: " + std::to_string(incomingMessages.size())).c_str());
+	std::vector<Message> flushed = incomingMessages;
+	incomingMessages.clear();
 	return flushed;
+}
+
+LoRaMesherComm* Connection::getComm() const {
+	return comm;
 }

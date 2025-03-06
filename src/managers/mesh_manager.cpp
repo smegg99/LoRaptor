@@ -16,10 +16,10 @@ void MeshManager::init() {
 	loraComm.startReceiveTask();
 }
 
-void MeshManager::sendMessage(Connection* connection, const std::string& preparedPayload) {
+void MeshManager::sendMessage(Connection* connection, const std::string& preparedPayloadContent) {
 	DEBUG_PRINTLN("Sending message to recipients...");
-	DEBUG_PRINTLN(("Payload size: " + std::to_string(preparedPayload.length()) + " bytes").c_str());
-	DEBUG_PRINTLN(("Payload content sample: " + (preparedPayload.length() > 20 ? preparedPayload.substr(0, 20) + "..." : preparedPayload)).c_str());
+	DEBUG_PRINTLN(("Payload size: " + std::to_string(preparedPayloadContent.length()) + " bytes").c_str());
+	DEBUG_PRINTLN(("Payload content sample: " + (preparedPayloadContent.length() > 20 ? preparedPayloadContent.substr(0, 20) + "..." : preparedPayloadContent)).c_str());
 	DEBUG_PRINTLN(("Sending to " + std::to_string(connection->getRecipients().size()) + " recipients").c_str());
 	std::vector<uint16_t> recipients = connection->getRecipients();
 	if (recipients.empty()) {
@@ -27,7 +27,7 @@ void MeshManager::sendMessage(Connection* connection, const std::string& prepare
 		return;
 	}
 	for (const auto& recipient : recipients) {
-		loraComm.sendTo(recipient, preparedPayload);
+		loraComm.sendTo(recipient, preparedPayloadContent);
 	}
 }
 

@@ -10,3 +10,4 @@ build
 lib/LoRaMesher
 lib/RaptorCLI
 lib/smaz2
+include/objects

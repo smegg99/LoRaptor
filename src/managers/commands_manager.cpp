@@ -2,8 +2,8 @@
 #include "config.h"
 #include "managers/commands_manager.h"
 #include "managers/connection_manager.h"
-#include "RaptorCLI.h"
 #include "managers/mesh_manager.h"
+#include "RaptorCLI.h"
 
 #ifdef RGB_FEEDBACK_ENABLED
 #include "rgb/rgb_feedback.h"
@@ -11,8 +11,9 @@ extern RGBFeedback rgbFeedback;
 #endif
 
 extern ConnectionManager connectionManager;
-extern Dispatcher dispatcher;
 extern MeshManager meshManager;
+extern Dispatcher dispatcher;
+extern LoRaMesherComm* loraMesherComm;
 
 ExecutableCommand errExecCmd;
 ExecutableCommand returnExecCmd;
@@ -20,11 +21,11 @@ ExecutableCommand readyExecCmd;
 ExecutableCommand listExecCmd;
 
 void executeReturnCommand(const std::string& value) {
-	returnExecCmd.executeWithArgs({ {"v", {Value(value)}} });
+	returnExecCmd.toOutputWithArgs({ {"v", {Value(value)}} });
 }
 
 void executeErrorCommand(const std::string& errorMessage) {
-	errExecCmd.executeWithArgs({ {"m", {Value(errorMessage)}} });
+	errExecCmd.toOutputWithArgs({ {"m", {Value(errorMessage)}} });
 }
 
 void createConnectionCallback(const Command& cmd) {
@@ -52,7 +53,7 @@ void createConnectionCallback(const Command& cmd) {
 		}
 	}
 	CLIOutput* output = dispatcher.getOutput();
-	if (connectionManager.createConnection(id, key, recipientIDs)) {
+	if (connectionManager.createConnection(id, key, recipientIDs, loraMesherComm)) {
 		executeReturnCommand(MSG_CONN_CREATED);
 	}
 	else {
@@ -105,8 +106,60 @@ void sendCallback(const Command& cmd) {
 		return;
 	}
 
-	std::string preparedMessage = c->prepareMessage(message);
-	meshManager.sendMessage(c, preparedMessage);
+	Payload p = c->preparePayload(message);
+	if (p.getContent().empty()) {
+		executeErrorCommand(ERROR_COMM_FAILED_PREPARE);
+		return;
+	}
+
+	Message outgoingMsg(message, p.getEpoch(), meshManager.getLocalAddress(), PayloadType::MESSAGE);
+	outgoingMsg.encodedContent = p.getContent();
+	outgoingMsg.updateLastSentTime(millis());
+
+	c->storeOutgoingMessage(outgoingMsg);
+}
+
+void flushCallback(const Command& cmd) {
+	CLIOutput* output = dispatcher.getOutput();
+	std::string connectionID(cmd.arguments[0].values[0].toString());
+	Connection* c = connectionManager.getConnection(connectionID);
+	if (c == nullptr) {
+		executeReturnCommand(ERROR_CONN_NOT_FOUND);
+		return;
+	}
+
+	std::vector<Message> messages = c->flushIncomingMessages();
+	for (const Message& msg : messages) {
+		std::string content = msg.getContent();
+		output->println(content.c_str());
+	}
+
+	Value messagesList;
+	messagesList.type = VAL_LIST;
+
+	for (const Message& msg : messages) {
+		Value messageData;
+		messageData.type = VAL_LIST;
+
+		Value senderValue;
+		senderValue.type = VAL_STRING;
+		senderValue.stringValue = std::to_string(msg.getSenderNodeID());
+		messageData.listValue.push_back(senderValue);
+
+		Value epochValue;
+		epochValue.type = VAL_INT;
+		epochValue.intValue = msg.getEpoch();
+		messageData.listValue.push_back(epochValue);
+
+		Value contentValue;
+		contentValue.type = VAL_STRING;
+		contentValue.stringValue = msg.getContent();
+		messageData.listValue.push_back(contentValue);
+
+		messagesList.listValue.push_back(messageData);
+	}
+
+	returnExecCmd.toOutputWithArgs({ {"v", messagesList} });
 }
 
 void listConnectionsCallback(const Command& cmd) {
@@ -154,6 +207,9 @@ void processCommand(const std::string& cmd) {
 }
 
 void registerCommands() {
+	dispatcher.registerErrorCallback([] (const std::string& msg) {
+		executeErrorCommand(msg);
+		});
 	CLIOutput* output = dispatcher.getOutput();
 
 	// --- General Commands ---
@@ -167,7 +223,7 @@ void registerCommands() {
 	Command deleteCmd("delete", "Deletes an item", output);
 	Command listCmd("list", "Lists all items", output);
 
-	// --- Connection Commands (as subcommands) ---
+	// --- Connection Subcommands ---
 	Command createConnectionCmd("connection", "Creates a new connection", output, createConnectionCallback);
 	createConnectionCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
 	createConnectionCmd.addArgSpec(ArgSpec("k", VAL_STRING, true, "Connection key"));
@@ -194,6 +250,10 @@ void registerCommands() {
 	sendCmd.addArgSpec(ArgSpec("m", VAL_STRING, true, "Message"));
 	dispatcher.registerCommand(sendCmd);
 
+	Command flushCmd("flush", "Flushes the message queue", output, flushCallback);
+	flushCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
+	dispatcher.registerCommand(flushCmd);
+
 	// --- Listing ---
 	Command listConnectionsCmd("connections", "Lists all connections", output, listConnectionsCallback);
 	listCmd.addSubcommand(listConnectionsCmd);
@@ -203,17 +263,40 @@ void registerCommands() {
 
 	// --- Value Commands ---
 	Command getCmd("get", "Gets a value", output);
-	Command getNodeIDCmd("nodeid", "Gets the node ID", output, [] (const Command& cmd) {
-		CLIOutput* out = dispatcher.getOutput();
-		out->println(std::to_string(meshManager.getLocalAddress()));
+	Command getNodeIDCmd("nodeID", "Gets the node ID", output, [] (const Command& cmd) {
+		returnExecCmd.toOutputWithArgs({ {"v", {Value(std::to_string(meshManager.getLocalAddress()))}} });
 		});
 	getCmd.addSubcommand(getNodeIDCmd);
 
+	Command getRTCTime("rtc", "Gets the RTC time", output, [] (const Command& cmd) {
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		returnExecCmd.toOutputWithArgs({ {"v", {Value(std::to_string(tv.tv_sec))}} });
+		});
+	getCmd.addSubcommand(getRTCTime);
+
 	Command setCmd("set", "Sets a value", output);
+	Command setRTCTime("rtc", "Sets the RTC time", output, [] (const Command& cmd) {
+		CLIOutput* out = dispatcher.getOutput();
+		std::string timeStr = cmd.arguments[0].values[0].toCString();
+		std::uint32_t time = std::stoul(timeStr);
+		struct timeval tv;
+		tv.tv_sec = time;
+		tv.tv_usec = 0;
+
+		if (settimeofday(&tv, NULL) < 0) {
+			executeErrorCommand(ERROR_RTC_FAILED_SET);
+			return;
+		}
+
+		executeReturnCommand(MSG_RTC_SET);
+		});
+	setRTCTime.addArgSpec(ArgSpec("t", VAL_INT, true, "Time in seconds since epoch"));
+	setCmd.addSubcommand(setRTCTime);
 
 	// --- Miscellaneous ---
 	Command pingCmd("ping", "Pings the system to check if it's responsive", output, [] (const Command& cmd) {
-		executeReturnCommand("pong");
+		returnExecCmd.toOutputWithArgs({ {"v", {Value("pong")}} });
 		});
 	dispatcher.registerCommand(pingCmd);
 
@@ -230,14 +313,14 @@ void registerCommands() {
 		CLIOutput* out = dispatcher.getOutput();
 		out->println(cmd.arguments[0].values[0].toCString());
 		});
-	errCmd.addArgSpec(ArgSpec("m", VAL_STRING, true, "Error message"));
+	errCmd.setVariadic(true);
 	errExecCmd = ExecutableCommand(errCmd, { {"m", {Value("")}} });
 
 	Command returnCmd("return", "Returns a value", output, [] (const Command& cmd) {
 		CLIOutput* out = dispatcher.getOutput();
 		out->println(cmd.arguments[0].values[0].toCString());
 		});
-	returnCmd.addArgSpec(ArgSpec("v", VAL_STRING, true, "Return value"));
+	returnCmd.setVariadic(true);
 	returnExecCmd = ExecutableCommand(returnCmd, { {"v", {Value("")}} });
 
 	Command readyCmd("ready", "Indicates that the system is ready", output, [] (const Command& cmd) {
@@ -246,6 +329,5 @@ void registerCommands() {
 	readyExecCmd = ExecutableCommand(readyCmd, {});
 	listExecCmd = ExecutableCommand(listCmd, {});
 
-	// Execute "ready" to signal that registration is complete.
 	readyExecCmd.execute();
 }

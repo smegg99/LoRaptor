@@ -11,6 +11,8 @@
 
 class LoRaMesherComm : public CommunicationInterface {
 public:
+	typedef std::function<void(const std::string&, const uint16_t)> ReceiveFromCallback;
+
 	LoRaMesherComm();
 	virtual ~LoRaMesherComm();
 
@@ -25,12 +27,17 @@ public:
 
 	LoraMesher& getRadio() { return radio; }
 	ReceiveCallback getReceiveCallback() const { return _receiveCallback; }
+	ReceiveFromCallback getReceiveFromCallback() const { return _receiveFromCallback; }
+
+	void setReceiveFromCallback(ReceiveFromCallback callback) { _receiveFromCallback = callback; }
 
 	void sendTo(uint16_t address, const std::string& data);
+	void sendACK(uint16_t address, const std::string& ackPayload);
 	void startReceiveTask();
 private:
 	LoraMesher& radio;
 	ReceiveCallback _receiveCallback;
+	ReceiveFromCallback _receiveFromCallback;
 	ConnectedCallback _connectedCallback;
 	DisconnectedCallback _disconnectedCallback;
 	WaitingForConnectionCallback _waitingForConnectionCallback;

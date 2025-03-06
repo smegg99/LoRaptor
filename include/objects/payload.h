@@ -4,11 +4,13 @@
 
 #include <string>
 #include <cstdint>
+#include "objects/message.h"
+#include "objects/payload_type.h"
 
 class Payload {
 public:
 	Payload() = default;
-	Payload(std::string publicWord, uint32_t epoch = 0, std::string message = "");
+	Payload(std::string publicWord, uint32_t epoch, std::string content, PayloadType type = PayloadType::MESSAGE);
 
 	// Encodes this payload into a single encrypted and compressed string.
 	// Returns true on success and fills encodedOut; false on any failure.
@@ -21,14 +23,13 @@ public:
 
 	std::string getPublicWord() const { return publicWord; }
 	uint32_t getEpoch() const { return epoch; }
-	std::string getMessage() const { return message; }
+	std::string getContent() const { return content; }
+	PayloadType getType() const { return type; }
 private:
 	std::string publicWord;  // The public word, one which identifies the connection to which the message belongs
 	uint32_t epoch;
-	std::string message;
-	// Compresses the input string using LZ4 and prepends a 4-byte header (big-endian)
-	// that encodes the original (uncompressed) size.
-	// Returns an empty string on failure.
+	std::string content;
+	PayloadType type;
 	static std::string compressWithHeader(const std::string& input);
 	static std::string decompressWithHeader(const std::string& input);
 	static std::string encryptMessageInternal(const std::string& key, const std::string& plaintext);

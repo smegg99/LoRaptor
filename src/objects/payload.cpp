@@ -17,8 +17,8 @@ extern "C" {
 #include "mbedtls/aes.h"
 #include "mbedtls/base64.h"
 
-Payload::Payload(std::string publicWord, uint32_t epoch, std::string message)
-	: publicWord(publicWord), epoch(epoch), message(message) {
+Payload::Payload(std::string publicWord, uint32_t epoch, std::string content, PayloadType type)
+	: publicWord(publicWord), epoch(epoch), content(content), type(type) {
 }
 
 // Compress the input string using Smaz2.
@@ -192,9 +192,9 @@ std::string Payload::decryptMessageInternal(const std::string& key, const std::s
 }
 
 bool Payload::encode(const std::string& encryptionKey, std::string& encodedOut) const {
-	// Build the payload string in the format: "publicWord|epoch|message"
+	// Build the payload string in the format: "publicWord|epoch|type|content"
 	std::ostringstream oss;
-	oss << publicWord << "|" << epoch << "|" << message;
+	oss << publicWord << "|" << epoch << "|" << toUint(type) << "|" << content;
 	std::string payloadStr = oss.str();
 
 	DEBUG_PRINTLN(("Encoding payload: " + payloadStr).c_str());
@@ -226,7 +226,7 @@ bool Payload::decode(const std::string& encryptedCompressedData, const std::stri
 	if (decompressedPayload.empty()) {
 		return false;
 	}
-	// Expected format: "publicWord|epoch|message"
+	// Expected format: "publicWord|epoch|type|message"
 	size_t pos1 = decompressedPayload.find('|');
 	if (pos1 == std::string::npos) {
 		return false;
@@ -237,16 +237,31 @@ bool Payload::decode(const std::string& encryptedCompressedData, const std::stri
 		return false;
 	}
 	std::string epochStr = decompressedPayload.substr(pos1 + 1, pos2 - pos1 - 1);
-	std::string msg = decompressedPayload.substr(pos2 + 1);
+	
+	size_t pos3 = decompressedPayload.find('|', pos2 + 1);
+	if (pos3 == std::string::npos) {
+		return false;
+	}
+	std::string typeStr = decompressedPayload.substr(pos2 + 1, pos3 - pos2 - 1);
+	std::string msg = decompressedPayload.substr(pos3 + 1);
 
-	std::istringstream iss(epochStr);
+	std::istringstream issEpoch(epochStr);
 	uint32_t ep;
-	if (!(iss >> ep)) {
+	if (!(issEpoch >> ep)) {
+		return false;
+	}
+	
+	std::istringstream issType(typeStr);
+	uint8_t typeVal;
+	if (!(issType >> typeVal)) {
 		return false;
 	}
 
 	pOut.publicWord = pubWord;
 	pOut.epoch = ep;
-	pOut.message = msg;
+	pOut.type = toPayloadType(typeVal);
+	pOut.content = msg;
+	
+	DEBUG_PRINTLN(("Decoded payload: " + pubWord + "|" + epochStr + "|" + typeStr + "|" + msg).c_str());
 	return true;
 }

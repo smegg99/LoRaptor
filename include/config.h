@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 #ifdef DEBUG_MODE
 #include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -18,12 +18,15 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 #endif
 
-#define COMMANDS_QUEUE_LENGTH 16
+#define COMMANDS_QUEUE_LENGTH 32
 #define MESSAGE_BUFFER_SIZE 64
+#define IGNORE_RECIPIENT_ACK
+
+#define RETRY_INTERVAL 5000
+#define MAX_RETRIES 5
 
 #define DEVICE_NAME "LoRaptor"
 #define PUBLIC_WORD "LORAPTOR"
-
 
 #define DEVICE_VID 0x1209
 #define DEVICE_PID 0x2077
@@ -64,7 +67,10 @@
 #define ERROR_CONN_NO_RECIPIENTS "error.conn.no_recipients"
 #define ERROR_CONN_CANNOT_CREATE "error.conn.cannot_create"
 #define ERROR_CMD_ERROR "error.cmd.error"
+#define ERROR_RTC_FAILED_SET "error.rtc.failed_set"
+#define ERROR_COMM_FAILED_PREPARE "error.comm.failed_prepare"
 
+#define MSG_RTC_SET "msg.rtc.set"
 #define MSG_CONN_CREATED "msg.conn.created"
 #define MSG_CONN_DELETED "msg.conn.deleted"
 #define MSG_RECIPIENT_ADDED "msg.recipient.added"

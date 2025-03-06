@@ -27,8 +27,8 @@ void LoRaMesherComm::init() {
 	cfg.loraIrq = LORA_DIO0;
 	cfg.loraIo1 = LORA_DIO1;
 	cfg.freq = 433.0;
-	cfg.bw = 125.0;
-	cfg.sf = 10;
+	cfg.bw = 500;
+	cfg.sf = 7;
 	cfg.cr = 5;
 	cfg.syncWord = 0x12;
 	cfg.power = 20;
@@ -55,8 +55,8 @@ void LoRaMesherComm::send(const std::string& data) {
 	}
 }
 
-void LoRaMesherComm::sendTo(uint16_t address, const std::string& preparedPayload) {
-	std::string payload = preparedPayload;
+void LoRaMesherComm::sendTo(uint16_t address, const std::string& preparedPayloadContent) {
+	std::string payload = preparedPayloadContent;
 	std::vector<uint8_t> buffer(payload.begin(), payload.end());
 
 	radio.sendReliablePacket(address, buffer.data(), static_cast<uint32_t>(buffer.size()));
@@ -64,6 +64,15 @@ void LoRaMesherComm::sendTo(uint16_t address, const std::string& preparedPayload
 
 	if (_transmittedCallback) {
 		_transmittedCallback(payload);
+	}
+}
+
+void LoRaMesherComm::sendACK(uint16_t address, const std::string& ackPayload) {
+	std::vector<uint8_t> buffer(ackPayload.begin(), ackPayload.end());
+	radio.sendReliablePacket(address, buffer.data(), static_cast<uint32_t>(buffer.size()));
+	DEBUG_PRINTLN(("sent ACK: " + ackPayload + " to: " + std::to_string(address)).c_str());
+	if (_transmittedCallback) {
+		_transmittedCallback(ackPayload);
 	}
 }
 
@@ -97,9 +106,10 @@ static void processReceivedPacketsTask(void* parameter) {
 			if (packet != nullptr) {
 				std::string received(reinterpret_cast<const char*>(packet->payload), packet->getPayloadLength());
 				std::string plaintext = received;
-				DEBUG_PRINTLN(("LoRaMesher received: " + plaintext).c_str());
-				if (comm->getReceiveCallback()) {
-					comm->getReceiveCallback()(plaintext);
+				uint16_t senderNodeId = packet->src;
+				DEBUG_PRINTLN(("LoRaMesher received from node " + std::to_string(senderNodeId) + ": " + plaintext).c_str());
+				if (comm->getReceiveFromCallback()) {
+					comm->getReceiveFromCallback()(plaintext, senderNodeId);
 				}
 				comm->getRadio().deletePacket(packet);
 			}
