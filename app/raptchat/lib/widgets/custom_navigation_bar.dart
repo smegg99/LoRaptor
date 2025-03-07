@@ -18,7 +18,7 @@ class CustomNavigationBar extends StatelessWidget {
     return NavigationBar(
       selectedIndex: currentIndex,
       onDestinationSelected: onDestinationSelected,
-      animationDuration: const Duration(milliseconds: 250),
+      animationDuration: const Duration(milliseconds: 300),
       labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
       destinations: [
         NavigationDestination(

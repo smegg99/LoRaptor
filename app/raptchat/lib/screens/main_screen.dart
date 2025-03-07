@@ -1,11 +1,14 @@
 // lib/screens/main_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:raptchat/localization/localization.dart';
+import 'package:raptchat/managers/ble_device_manager.dart';
+import 'package:raptchat/models/ble_device.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/widgets/custom_navigation_bar.dart';
-import 'package:raptchat/screens/connections_screen.dart';
+import 'package:raptchat/screens/home_screen.dart';
 import 'package:raptchat/screens/devices_screen.dart';
 import 'package:raptchat/screens/mesh_screen.dart';
 
@@ -81,7 +84,7 @@ class _MainScreenState extends State<MainScreen> {
     );
 
     if (confirm == true) {
-      for (var element in elementsToDelete) {
+      for (final element in elementsToDelete) {
         await element.delete();
       }
       setState(() {
@@ -89,6 +92,17 @@ class _MainScreenState extends State<MainScreen> {
         _selectedIndices.clear();
       });
     }
+  }
+
+  // Define a scan function for BLE devices.
+  void _scanForDevices(BuildContext context) {
+    final deviceManager = Provider.of<BleDeviceManager>(context, listen: false);
+    deviceManager.clearAvailableDevices();
+    // Simulate discovering two BLE devices with a NUS service.
+    deviceManager.addAvailableDevice(
+        BleDevice(displayName: "BLE Device A", nodeId: 101));
+    deviceManager.addAvailableDevice(
+        BleDevice(displayName: "BLE Device B", nodeId: 102));
   }
 
   @override
@@ -107,42 +121,67 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(appBarTitle),
+        title: _currentIndex == 0 && !_isSelectionMode
+            ? SvgPicture.asset(
+                'assets/logo.svg',
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context).colorScheme.inverseSurface,
+                  BlendMode.srcIn,
+                ),
+                height: 40,
+              )
+            : Text(appBarTitle),
         actions: _currentIndex == 0
             ? _isSelectionMode
-          ? [
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () async {
-            final box =
-                Hive.box<ConnectionElement>('connection_elements');
-            await _deleteSelectedItems(box);
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-            setState(() {
-              _isSelectionMode = false;
-              _selectedIndices.clear();
-            });
-                },
-              ),
-            ]
-          : [
-              IconButton(
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-            Navigator.pushNamed(context, '/settings');
-                },
-              ),
-            ]
-            : null,
+                ? [
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () async {
+                        final box =
+                            Hive.box<ConnectionElement>('connection_elements');
+                        await _deleteSelectedItems(box);
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          setState(() {
+                            _isSelectionMode = false;
+                            _selectedIndices.clear();
+                          });
+                        },
+                      ),
+                    ),
+                  ]
+                : [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.settings),
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/settings');
+                        },
+                      ),
+                    ),
+                  ]
+            : _currentIndex == 1
+                ? [
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.bluetooth_searching),
+                        onPressed: () => _scanForDevices(context),
+                      ),
+                    ),
+                  ]
+                : null,
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          ConnectionsScreen(
+          HomeScreen(
             onEdit: _handleEdit,
             onConnect: _handleConnect,
             onCreate: _handleCreate,
@@ -151,12 +190,15 @@ class _MainScreenState extends State<MainScreen> {
             onToggleSelectItem: _toggleSelectItem,
             onToggleSelectionMode: _toggleSelectionMode,
           ),
-          const DevicesScreen(),
+          // Pass isActive flag to DevicesScreen.
+          DevicesScreen(isActive: _currentIndex == 1),
           const MeshScreen(),
         ],
       ),
       floatingActionButton: _currentIndex == 0 && !_isSelectionMode
           ? FloatingActionButton(
+              enableFeedback: true,
+              shape: const CircleBorder(),
               onPressed: _handleCreate,
               child: const Icon(Icons.add),
             )

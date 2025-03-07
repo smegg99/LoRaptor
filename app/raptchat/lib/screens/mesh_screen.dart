@@ -1,5 +1,4 @@
 // lib/pages/mesh_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:raptchat/localization/localization.dart';
 

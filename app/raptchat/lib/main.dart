@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:raptchat/models/ble_device.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/models/settings_element.dart';
 import 'package:raptchat/theme/notifier.dart';
@@ -13,68 +13,8 @@ import 'package:raptchat/localization/localization.dart';
 import 'package:raptchat/screens/main_screen.dart';
 import 'package:raptchat/screens/connection_edit_screen.dart';
 import 'package:raptchat/screens/settings_screen.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  final directory = await _getAppDirectory();
-
-  await Hive.initFlutter(directory.path);
-  Hive.registerAdapter(ConnectionElementAdapter());
-  Hive.registerAdapter(ActionElementAdapter());
-  Hive.registerAdapter(SettingsElementAdapter());
-  await Hive.openBox<ConnectionElement>('connection_elements');
-  final settingsBox = await Hive.openBox<SettingsElement>('settings');
-  final settings = settingsBox.get(0);
-
-  String themeMode = settings?.theme ?? 'System';
-  String language = settings?.language ?? 'English';
-  Locale initialLocale =
-      language == 'English' ? const Locale('en') : const Locale('pl');
-
-  runApp(
-    DynamicColorBuilder(
-      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        final fallbackSeed = Colors.blue;
-
-        final lightTheme = ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.light,
-          colorScheme: lightDynamic ??
-              ColorScheme.fromSeed(
-                  seedColor: fallbackSeed, brightness: Brightness.light),
-        );
-        final darkTheme = ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          colorScheme: darkDynamic ??
-              ColorScheme.fromSeed(
-                  seedColor: fallbackSeed, brightness: Brightness.dark),
-        );
-
-        final brightness =
-            SchedulerBinding.instance.platformDispatcher.platformBrightness;
-        final initialTheme = themeMode == 'Light'
-            ? lightTheme
-            : themeMode == 'Dark'
-                ? darkTheme
-                : brightness == Brightness.dark
-                    ? darkTheme
-                    : lightTheme;
-
-        return ChangeNotifierProvider(
-          create: (context) => ThemeNotifier(initialTheme, themeMode),
-          child: MyApp(
-            appDirectory: directory,
-            initialLocale: initialLocale,
-            lightTheme: lightTheme,
-            darkTheme: darkTheme,
-          ),
-        );
-      },
-    ),
-  );
-}
+import 'package:raptchat/screens/devices_screen.dart';
+import 'package:raptchat/managers/ble_device_manager.dart';
 
 Future<Directory> _createAppDirectory(Directory appDir) async {
   try {
@@ -85,7 +25,6 @@ Future<Directory> _createAppDirectory(Directory appDir) async {
     print('Error creating app directory: $e');
     throw Exception('Failed to initialize app directory.');
   }
-
   return appDir;
 }
 
@@ -103,18 +42,79 @@ Future<Directory> _getAppDirectory() async {
   }
 }
 
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final directory = await _getAppDirectory();
+
+  await Hive.initFlutter(directory.path);
+  Hive.registerAdapter(ConnectionElementAdapter());
+  Hive.registerAdapter(SettingsElementAdapter());
+  Hive.registerAdapter(BleDeviceAdapter());
+  await Hive.openBox<ConnectionElement>('connection_elements');
+  await Hive.openBox<BleDevice>('ble_devices');
+  final settingsBox = await Hive.openBox<SettingsElement>('settings');
+  final settings = settingsBox.get(0);
+
+  String themeMode = settings?.theme ?? 'System';
+  String language = settings?.language ?? 'English';
+  Locale initialLocale =
+      language == 'English' ? const Locale('en') : const Locale('pl');
+
+  runApp(
+    DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        final ColorScheme lightColorScheme = lightDynamic?.harmonized() ??
+            ColorScheme.fromSeed(
+              seedColor: const Color.fromARGB(255, 164, 0, 197),
+              brightness: Brightness.light,
+            );
+        final ColorScheme darkColorScheme = darkDynamic?.harmonized() ??
+            ColorScheme.fromSeed(
+              seedColor: const Color.fromARGB(255, 164, 0, 197),
+              brightness: Brightness.dark,
+            );
+
+        final lightThemeBase = ThemeData(
+          colorScheme: lightColorScheme,
+          useMaterial3: true,
+        );
+        final darkThemeBase = ThemeData(
+          colorScheme: darkColorScheme,
+          useMaterial3: true,
+        );
+
+        return MultiProvider(
+          providers: [
+            ChangeNotifierProvider(
+              create: (context) => ThemeNotifier(
+                lightThemeBase: lightThemeBase,
+                darkThemeBase: darkThemeBase,
+                initialMode: themeMode,
+              ),
+            ),
+            ChangeNotifierProvider(
+              create: (_) => BleDeviceManager(),
+            ),
+          ],
+          child: MyApp(
+            appDirectory: directory,
+            initialLocale: initialLocale,
+          ),
+        );
+      },
+    ),
+  );
+}
+
 class MyApp extends StatefulWidget {
   final Directory appDirectory;
   final Locale initialLocale;
-  final ThemeData lightTheme;
-  final ThemeData darkTheme;
 
   const MyApp({
     super.key,
     required this.appDirectory,
     required this.initialLocale,
-    required this.lightTheme,
-    required this.darkTheme,
   });
 
   @override
@@ -139,7 +139,6 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final themeNotifier = Provider.of<ThemeNotifier>(context);
-
     return MaterialApp(
       title: 'RaptChat',
       locale: _locale,
@@ -154,17 +153,18 @@ class _MyAppState extends State<MyApp> {
         Locale('pl'),
       ],
       debugShowCheckedModeBanner: false,
-      theme: themeNotifier.currentTheme,
-      darkTheme: widget.darkTheme,
+      theme: themeNotifier.lightTheme,
+      darkTheme: themeNotifier.darkTheme,
       themeMode: themeNotifier.currentThemeMode,
       routes: {
         '/': (context) => const MainScreen(),
         '/edit': (context) => ConnectionEditScreen(
-              element:
-                  ModalRoute.of(context)!.settings.arguments as ConnectionElement?,
+              element: ModalRoute.of(context)!.settings.arguments
+                  as ConnectionElement?,
               appDirectory: widget.appDirectory,
             ),
         '/settings': (context) => SettingsScreen(onLocaleChange: _setLocale),
+        '/devices': (context) => const DevicesScreen(isActive: false),
       },
     );
   }

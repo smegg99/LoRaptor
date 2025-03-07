@@ -8,6 +8,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:raptchat/localization/localization.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:raptchat/models/connection_element.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:dotted_border/dotted_border.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 class ConnectionEditScreen extends StatefulWidget {
   final ConnectionElement? element;
@@ -27,6 +30,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
   late TextEditingController _nameController;
   late TextEditingController _privateKeyController;
   bool _isObscure = true;
+  String? _avatarPath; // holds the file path of the selected avatar
 
   AppLocalizations get localizations => AppLocalizations.of(context);
 
@@ -36,6 +40,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
     _nameController = TextEditingController(text: widget.element?.name ?? '');
     _privateKeyController =
         TextEditingController(text: widget.element?.privateKey ?? '');
+    _avatarPath = widget.element?.avatarPath;
   }
 
   @override
@@ -79,6 +84,8 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         name: resolvedName,
         order: box.values.length,
         privateKey: _privateKeyController.text,
+        avatarPath: _avatarPath,
+        ownerNodeID: 0, // TODO: Change this to the reported node ID
       );
 
       await box.add(newElement);
@@ -92,6 +99,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
       }
 
       widget.element!.privateKey = _privateKeyController.text;
+      widget.element!.avatarPath = _avatarPath;
 
       await widget.element!.save();
     }
@@ -112,6 +120,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
     final data = jsonEncode({
       'name': _nameController.text,
       'private_key': _privateKeyController.text,
+      'avatar_path': _avatarPath,
     });
 
     if (mounted) {
@@ -157,6 +166,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
                     setState(() {
                       _nameController.text = data['name'] ?? '';
                       _privateKeyController.text = data['private_key'] ?? '';
+                      _avatarPath = data['avatar_path'];
                     });
                     Navigator.pop(context);
                   }
@@ -170,17 +180,93 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
     );
   }
 
-  Future<bool> _canUseCamera() async {
-    if (Platform.isAndroid || Platform.isIOS) {
-      final status = await Permission.camera.status;
-      if (status.isGranted) {
-        return true;
-      } else if (status.isDenied) {
-        final result = await Permission.camera.request();
-        return result.isGranted;
+  Future<bool> _requestCameraPermission() async {
+    final status = await Permission.camera.request();
+    return status.isGranted;
+  }
+
+  Future<void> _handleScanQRCode() async {
+    bool hasPermission = await Permission.camera.isGranted;
+    if (!hasPermission) {
+      hasPermission = await _requestCameraPermission();
+    }
+    if (hasPermission) {
+      _scanQRCode();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(localizations.translate(
+                'screens.connection_edit.labels.camera_permission_required')),
+          ),
+        );
       }
     }
-    return false;
+  }
+
+  Future<void> _pickAvatarImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      if (!mounted) return;
+      final Color primaryColor = Theme.of(context).primaryColor;
+
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 100,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Adjust Avatar',
+            cropStyle: CropStyle.circle,
+            toolbarColor: primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: true,
+          ),
+          IOSUiSettings(
+            title: 'Adjust Avatar',
+            cropStyle: CropStyle.circle,
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            aspectRatioPickerButtonHidden: true,
+            rotateButtonsHidden: true,
+          ),
+        ],
+      );
+      if (croppedFile != null) {
+        setState(() {
+          _avatarPath = croppedFile.path;
+        });
+      }
+    }
+  }
+
+  Widget _buildAvatarPicker() {
+    return Center(
+      child: GestureDetector(
+        onTap: _pickAvatarImage,
+        child: DottedBorder(
+          borderType: BorderType.Circle,
+          dashPattern: [6, 3],
+          color: Theme.of(context).colorScheme.primary,
+          strokeWidth: 2,
+          child: CircleAvatar(
+            radius: 64,
+            backgroundColor: Colors.transparent,
+            backgroundImage:
+                _avatarPath != null ? FileImage(File(_avatarPath!)) : null,
+            child: _avatarPath == null
+                ? const Icon(
+                    Icons.add,
+                    size: 40,
+                  )
+                : null,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -189,22 +275,9 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
       appBar: AppBar(
         title: Text(localizations.translate('screens.connection_edit.title')),
         actions: [
-          FutureBuilder<bool>(
-            future: _canUseCamera(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done &&
-                  snapshot.data == true) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: IconButton(
-                    icon: const Icon(Icons.qr_code_scanner),
-                    onPressed: _scanQRCode,
-                  ),
-                );
-              } else {
-                return Container();
-              }
-            },
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner),
+            onPressed: _handleScanQRCode, // Check permission on tap
           ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -225,11 +298,15 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _buildAvatarPicker(),
+          const SizedBox(height: 16),
           TextField(
             controller: _nameController,
             decoration: InputDecoration(
-                labelText: localizations.translate('labels.connection_name')),
+              labelText: localizations.translate('labels.connection_name'),
+            ),
           ),
+          const SizedBox(height: 16),
           TextField(
             controller: _privateKeyController,
             decoration: InputDecoration(
