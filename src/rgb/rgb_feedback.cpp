@@ -1,4 +1,4 @@
-// src/rgb_feedback.cpp
+// src/rgb/rgb_feedback.cpp
 #include "rgb/rgb_feedback.h"
 #include <algorithm>
 #include <math.h>
@@ -11,18 +11,14 @@
 extern RGBFeedback rgbFeedback;
 #endif
 
-// TODO: Fix the issue with the idle animation not being continued from the previous moment after a new action is set.
-
-// Helper: Apply an interpolation curve to t (0.0 to 1.0) based on style.
+// Apply an interpolation curve to t (0.0 to 1.0) based on style.
 static inline float applyInterpolation(float t, InterpolationStyle style) {
 	switch (style) {
 	case INTERP_LINEAR:
 		return t;
 	case INTERP_SINUSOIDAL:
-		// Smooth ease-in-out using sine.
 		return (sin((t - 0.5f) * M_PI) + 1.0f) / 2.0f;
 	case INTERP_EXPONENTIAL:
-		return t * t;
 	case INTERP_QUADRATIC:
 		return t * t;
 	case INTERP_CUBIC:
@@ -41,13 +37,11 @@ RGBFeedback::RGBFeedback()
 }
 
 RGBFeedback::~RGBFeedback() {
-	if (currentAction != nullptr) {
+	if (currentAction) {
 		delete currentAction;
-		currentAction = nullptr;
 	}
-	if (pendingAction != nullptr) {
+	if (pendingAction) {
 		delete pendingAction;
-		pendingAction = nullptr;
 	}
 }
 
@@ -77,7 +71,7 @@ void RGBFeedback::enqueueAction(DeviceAction action) {
 
 void RGBFeedback::setImmediateAction(const RGBAction& action) {
 	actionQueue.clear();
-	if (currentAction != nullptr) {
+	if (currentAction) {
 		delete currentAction;
 		currentAction = nullptr;
 	}
@@ -94,15 +88,14 @@ void RGBFeedback::setAction(DeviceAction action) {
 	transitionToAction(newAction, DEFAULT_TRANSITION_DURATION);
 }
 
-// Here we compute the “effective” starting color based on the current action.
-// This ensures we start the fade transition from the correct (current) LED state.
+// Transition from the current color to the new action’s target,
+// preserving the current LED state. For idle actions, we preserve the idle phase.
 void RGBFeedback::transitionToAction(const RGBAction& newAction, uint32_t fadeDuration) {
 	uint32_t now = millis();
 	float effectiveR, effectiveG, effectiveB;
-	if (currentAction != nullptr) {
+	if (currentAction) {
 		switch (currentAction->effect) {
 		case EFFECT_BLINK:
-			// When blinking, use the "on" color.
 			effectiveR = currentAction->red;
 			effectiveG = currentAction->green;
 			effectiveB = currentAction->blue;
@@ -112,8 +105,7 @@ void RGBFeedback::transitionToAction(const RGBAction& newAction, uint32_t fadeDu
 			uint32_t elapsed = now - actionStartTime;
 			uint32_t timeInCycle = elapsed % cycle;
 			float phase = ((float)timeInCycle / cycle) * 6.2831853f;
-			uint8_t brightnessVal = (uint8_t)(((sin(phase) + 1.0f) / 2.0f) * 255.0f);
-			float factor = (brightnessVal / 255.0f) * currentAction->brightness;
+			float factor = ((sin(phase) + 1.0f) / 2.0f) * currentAction->brightness;
 			effectiveR = currentAction->red * factor;
 			effectiveG = currentAction->green * factor;
 			effectiveB = currentAction->blue * factor;
@@ -134,9 +126,19 @@ void RGBFeedback::transitionToAction(const RGBAction& newAction, uint32_t fadeDu
 	transitionStartR = effectiveR;
 	transitionStartG = effectiveG;
 	transitionStartB = effectiveB;
+
+	if (newAction.action == ACTION_IDLE) {
+		if (!(currentAction && currentAction->action == ACTION_IDLE) && idleStartTime != 0) {
+			// Continue with the previously saved idleStartTime.
+		}
+		else {
+			idleStartTime = now;
+		}
+	}
+
 	transitionStartTime = now;
 	transitionDuration = fadeDuration;
-	if (pendingAction != nullptr) {
+	if (pendingAction) {
 		delete pendingAction;
 	}
 	pendingAction = new RGBAction(newAction);
@@ -146,71 +148,46 @@ void RGBFeedback::transitionToAction(const RGBAction& newAction, uint32_t fadeDu
 void RGBFeedback::update() {
 	uint32_t now = millis();
 
-	// Process any ongoing fade transition.
 	if (inTransition) {
 		uint32_t elapsed = now - transitionStartTime;
 		float t = (elapsed < transitionDuration) ? ((float)elapsed / transitionDuration) : 1.0f;
-		// Apply interpolation for smoother easing.
 		t = applyInterpolation(t, pendingAction->interpStyle);
 
-		float targetR = pendingAction->red;
-		float targetG = pendingAction->green;
-		float targetB = pendingAction->blue;
-		float r = transitionStartR + t * (targetR - transitionStartR);
-		float g = transitionStartG + t * (targetG - transitionStartG);
-		float b = transitionStartB + t * (targetB - transitionStartB);
+		float r = transitionStartR + t * (pendingAction->red - transitionStartR);
+		float g = transitionStartG + t * (pendingAction->green - transitionStartG);
+		float b = transitionStartB + t * (pendingAction->blue - transitionStartB);
 		float factor = pendingAction->brightness;
 		setLED((uint8_t)(r * 255.0f * factor),
 			(uint8_t)(g * 255.0f * factor),
 			(uint8_t)(b * 255.0f * factor));
+
 		if (t >= 1.0f) {
-			// Transition complete.
+			if (currentAction) delete currentAction;
 			currentAction = pendingAction;
 			pendingAction = nullptr;
 			inTransition = false;
 			actionStartTime = now;
-			if (currentAction->action == ACTION_IDLE) {
+			if (currentAction->action == ACTION_IDLE && idleStartTime == 0) {
 				idleStartTime = now;
 			}
 		}
 		return;
 	}
 
-	// Process queued actions, expiration of current action, etc.
-	if (!actionQueue.empty() && currentAction &&
-		(currentAction->action == ACTION_IDLE || currentAction->duration == 0)) {
+	if (currentAction && currentAction->action == ACTION_IDLE && !actionQueue.empty()) {
 		startNextAction();
 		return;
 	}
 
-	if (currentAction && (currentAction->duration > 0 && now - actionStartTime >= currentAction->duration)) {
+	// If there is no current action or if the current action's duration has expired, process queued actions.
+	if (!currentAction || (currentAction->duration > 0 && now - actionStartTime >= currentAction->duration)) {
 		if (!actionQueue.empty()) {
 			RGBAction nextAction = actionQueue.front();
 			actionQueue.erase(actionQueue.begin());
 			transitionToAction(nextAction, DEFAULT_TRANSITION_DURATION);
 		}
-		else {
-			if (currentAction->action != ACTION_IDLE) {
-				DefaultConfig idleConfig = defaults[ACTION_IDLE];
-				RGBAction idleAction(ACTION_IDLE,
-					idleConfig.red, idleConfig.green, idleConfig.blue,
-					idleConfig.red2, idleConfig.green2, idleConfig.blue2,
-					idleConfig.effect, idleConfig.interval, idleConfig.duration, 0,
-					idleConfig.brightness, idleConfig.interpStyle);
-				transitionToAction(idleAction, DEFAULT_TRANSITION_DURATION);
-			}
-		}
-		delete currentAction;
-		currentAction = nullptr;
-		return;
-	}
-
-	if (!currentAction) {
-		if (!actionQueue.empty()) {
-			startNextAction();
-			return;
-		}
-		else {
+		else if (!currentAction || currentAction->action != ACTION_IDLE) {
+			// No queued actions: default to idle.
 			DefaultConfig idleConfig = defaults[ACTION_IDLE];
 			RGBAction idleAction(ACTION_IDLE,
 				idleConfig.red, idleConfig.green, idleConfig.blue,
@@ -218,24 +195,25 @@ void RGBFeedback::update() {
 				idleConfig.effect, idleConfig.interval, idleConfig.duration, 0,
 				idleConfig.brightness, idleConfig.interpStyle);
 			transitionToAction(idleAction, DEFAULT_TRANSITION_DURATION);
-			return;
 		}
+		if (currentAction) {
+			delete currentAction;
+			currentAction = nullptr;
+		}
+		return;
 	}
 
-	// Process the current action’s effect.
+	float factor = currentAction->brightness;
 	switch (currentAction->effect) {
-	case EFFECT_SOLID: {
-		float factor = currentAction->brightness;
+	case EFFECT_SOLID:
 		setLED((uint8_t)(currentAction->red * 255.0f * factor),
 			(uint8_t)(currentAction->green * 255.0f * factor),
 			(uint8_t)(currentAction->blue * 255.0f * factor));
 		break;
-	}
-	case EFFECT_BLINK: {
+	case EFFECT_BLINK:
 		if (now - lastUpdateTime >= currentAction->interval) {
 			blinkState = !blinkState;
 			lastUpdateTime = now;
-			float factor = currentAction->brightness;
 			if (blinkState) {
 				setLED((uint8_t)(currentAction->red * 255.0f * factor),
 					(uint8_t)(currentAction->green * 255.0f * factor),
@@ -246,64 +224,57 @@ void RGBFeedback::update() {
 			}
 		}
 		break;
-	}
 	case EFFECT_PULSE: {
 		uint32_t cycle = currentAction->interval;
 		uint32_t elapsed = now - actionStartTime;
 		uint32_t timeInCycle = elapsed % cycle;
-		float phase = ((float)timeInCycle / (float)cycle) * 6.2831853f;
-		uint8_t brightnessVal = (uint8_t)(((sin(phase) + 1.0f) / 2.0f) * 255.0f);
-		float factor = (brightnessVal / 255.0f) * currentAction->brightness;
-		setLED((uint8_t)(currentAction->red * 255.0f * factor),
-			(uint8_t)(currentAction->green * 255.0f * factor),
-			(uint8_t)(currentAction->blue * 255.0f * factor));
+		float phase = ((float)timeInCycle / cycle) * 6.2831853f;
+		float brightnessVal = (sin(phase) + 1.0f) / 2.0f;
+		setLED((uint8_t)(currentAction->red * 255.0f * factor * brightnessVal),
+			(uint8_t)(currentAction->green * 255.0f * factor * brightnessVal),
+			(uint8_t)(currentAction->blue * 255.0f * factor * brightnessVal));
 		break;
 	}
 	case EFFECT_GRADIENT: {
+		// For idle animations, preserve the previous phase.
+		uint32_t baseTime = (currentAction->action == ACTION_IDLE) ? idleStartTime : actionStartTime;
+		uint32_t elapsed = now - baseTime;
 		uint32_t cycle = currentAction->interval;
-		uint32_t elapsed = now - actionStartTime;
 		uint32_t timeInCycle = elapsed % cycle;
 		float t = 0.0f;
 		switch (currentAction->interpStyle) {
-		case INTERP_LINEAR: {
-			float halfCycle = cycle / 2.0f;
-			t = (timeInCycle < halfCycle) ? (timeInCycle / halfCycle) :
-				(1.0f - ((timeInCycle - halfCycle) / halfCycle));
+		case INTERP_LINEAR:
+			t = (timeInCycle < cycle / 2.0f) ?
+				((float)timeInCycle / (cycle / 2.0f)) :
+				(1.0f - ((timeInCycle - cycle / 2.0f) / (cycle / 2.0f)));
 			break;
-		}
-		case INTERP_SINUSOIDAL: {
+		case INTERP_SINUSOIDAL:
 			t = (sin(((float)timeInCycle / cycle) * 6.2831853f - 1.5708f) + 1.0f) / 2.0f;
 			break;
-		}
-		case INTERP_EXPONENTIAL: {
-			float halfCycle = cycle / 2.0f;
-			t = (timeInCycle < halfCycle) ? pow(timeInCycle / halfCycle, 2.0f) :
-				pow((halfCycle - (timeInCycle - halfCycle)) / halfCycle, 2.0f);
+		case INTERP_EXPONENTIAL:
+			t = (timeInCycle < cycle / 2.0f) ?
+				pow((float)timeInCycle / (cycle / 2.0f), 2.0f) :
+				pow((cycle - timeInCycle) / (cycle / 2.0f), 2.0f);
 			break;
-		}
-		case INTERP_QUADRATIC: {
-			float halfCycle = cycle / 2.0f;
-			t = (timeInCycle < halfCycle) ? pow(timeInCycle / halfCycle, 2.0f) :
-				1.0f - pow((timeInCycle - halfCycle) / halfCycle, 2.0f);
+		case INTERP_QUADRATIC:
+			t = (timeInCycle < cycle / 2.0f) ?
+				pow((float)timeInCycle / (cycle / 2.0f), 2.0f) :
+				1.0f - pow((timeInCycle - cycle / 2.0f) / (cycle / 2.0f), 2.0f);
 			break;
-		}
-		case INTERP_CUBIC: {
-			float halfCycle = cycle / 2.0f;
-			t = (timeInCycle < halfCycle) ? pow(timeInCycle / halfCycle, 3.0f) :
-				1.0f - pow((timeInCycle - halfCycle) / halfCycle, 3.0f);
+		case INTERP_CUBIC:
+			t = (timeInCycle < cycle / 2.0f) ?
+				pow((float)timeInCycle / (cycle / 2.0f), 3.0f) :
+				1.0f - pow((timeInCycle - cycle / 2.0f) / (cycle / 2.0f), 3.0f);
 			break;
-		}
-		default: {
-			float halfCycle = cycle / 2.0f;
-			t = (timeInCycle < halfCycle) ? (timeInCycle / halfCycle) :
-				(1.0f - ((timeInCycle - halfCycle) / halfCycle));
+		default:
+			t = (timeInCycle < cycle / 2.0f) ?
+				((float)timeInCycle / (cycle / 2.0f)) :
+				(1.0f - ((timeInCycle - cycle / 2.0f) / (cycle / 2.0f)));
 			break;
-		}
 		}
 		float r = currentAction->red + t * (currentAction->red2 - currentAction->red);
 		float g = currentAction->green + t * (currentAction->green2 - currentAction->green);
 		float b = currentAction->blue + t * (currentAction->blue2 - currentAction->blue);
-		float factor = currentAction->brightness;
 		setLED((uint8_t)(r * 255.0f * factor),
 			(uint8_t)(g * 255.0f * factor),
 			(uint8_t)(b * 255.0f * factor));
@@ -312,6 +283,16 @@ void RGBFeedback::update() {
 	default:
 		break;
 	}
+}
+
+void RGBFeedback::startNextAction() {
+	while (!actionQueue.empty() && actionQueue.front().action == ACTION_IDLE) {
+		actionQueue.erase(actionQueue.begin());
+	}
+	if (actionQueue.empty()) return;
+	RGBAction nextAction = actionQueue.front();
+	actionQueue.erase(actionQueue.begin());
+	transitionToAction(nextAction, DEFAULT_TRANSITION_DURATION);
 }
 
 void RGBFeedback::setFeedbackConfig(DeviceAction action,
@@ -331,14 +312,4 @@ void RGBFeedback::setLED(uint8_t r, uint8_t g, uint8_t b) {
 	currentLED_R = r / 255.0f;
 	currentLED_G = g / 255.0f;
 	currentLED_B = b / 255.0f;
-}
-
-void RGBFeedback::startNextAction() {
-	while (!actionQueue.empty() && actionQueue.front().action == ACTION_IDLE) {
-		actionQueue.erase(actionQueue.begin());
-	}
-	if (actionQueue.empty()) return;
-	RGBAction nextAction = actionQueue.front();
-	actionQueue.erase(actionQueue.begin());
-	transitionToAction(nextAction, DEFAULT_TRANSITION_DURATION);
 }

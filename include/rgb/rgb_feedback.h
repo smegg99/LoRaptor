@@ -11,11 +11,11 @@
 #include "rgb/rgb_action.h"
 
 #define LEDC_TIMER     LEDC_TIMER_0
-#define LEDC_MODE      LEDC_LOW_SPEED_MODE
+#define LEDC_MODE      LEDC_SPEED_MODE_MAX
 #define LEDC_CHANNEL_R 0
 #define LEDC_CHANNEL_G 1
 #define LEDC_CHANNEL_B 2
-#define LEDC_FREQUENCY 5000    // 5 kHz PWM frequency
+#define LEDC_FREQUENCY 40000   // 40 kHz PWM frequency
 
 class RGBFeedback {
 public:
@@ -89,6 +89,6 @@ private:
 	void transitionToAction(const RGBAction& newAction, uint32_t fadeDuration = DEFAULT_TRANSITION_DURATION);
 };
 
-#endif // RGB_FEEDBACK_ENABLED
+#endif
 
 #endif

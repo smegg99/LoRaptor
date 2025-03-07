@@ -1,8 +1,11 @@
 // src/comms/ble_comm.h
 #include "comms/ble_comm.h"
 #include "config.h"
+#include "managers/mesh_manager.h"
 #include <esp_gap_ble_api.h>
 #include <functional>
+
+extern MeshManager meshManager;
 
 BLEComm::BLEComm() : pTxCharacteristic(nullptr),
 _receiveCallback(nullptr),
@@ -14,7 +17,8 @@ _waitingForConnectionCallback(nullptr) {
 BLEComm::~BLEComm() {}
 
 void BLEComm::init() {
-	BLEDevice::init(DEVICE_NAME);
+	BLEDevice::init("LoRaptor (" + std::to_string(meshManager.getLocalAddress()) + ")");
+	BLEDevice::setMTU(512);
 
 	BLEServer* pServer = BLEDevice::createServer();
 	pServer->setCallbacks(new MyBLEServerCallbacks(this));
@@ -116,7 +120,7 @@ void BLEComm::MyBLEServerCallbacks::onDisconnect(BLEServer* pServer) {
 void BLEComm::NUSCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	std::string rxValue = pCharacteristic->getValue();
 	if (!rxValue.empty()) {
-		DEBUG_PRINTLN(rxValue.c_str());
+		// DEBUG_PRINTLN(rxValue.c_str());
 		if (_parent->_receiveCallback) {
 			_parent->_receiveCallback(rxValue);
 		}

@@ -209,6 +209,7 @@ void processCommand(const std::string& cmd) {
 void registerCommands() {
 	dispatcher.registerErrorCallback([] (const std::string& msg) {
 		executeErrorCommand(msg);
+		rgbFeedback.setAction(ACTION_ERROR);
 		});
 	CLIOutput* output = dispatcher.getOutput();
 

@@ -33,7 +33,7 @@ QueueHandle_t commandQueue = NULL;
 void enqueueGlobalCommand(const std::string& cmd) {
 	if (commandQueue != NULL) {
 		if (xQueueSend(commandQueue, &cmd, 0) == pdPASS) {
-			DEBUG_PRINTLN(cmd.c_str());
+			// DEBUG_PRINTLN(cmd.c_str());
 		}
 		else {
 			DEBUG_PRINTLN("Global queue: Failed to enqueue command");
@@ -48,7 +48,7 @@ void enqueueGlobalCommand(const std::string& cmd) {
 void rgbTask(void* parameter) {
 	for (;;) {
 		rgbFeedback.update();
-		vTaskDelay(100 / portTICK_PERIOD_MS);
+		vTaskDelay(50 / portTICK_PERIOD_MS);
 	}
 }
 #endif

@@ -107,7 +107,7 @@ static void processReceivedPacketsTask(void* parameter) {
 				std::string received(reinterpret_cast<const char*>(packet->payload), packet->getPayloadLength());
 				std::string plaintext = received;
 				uint16_t senderNodeId = packet->src;
-				DEBUG_PRINTLN(("LoRaMesher received from node " + std::to_string(senderNodeId) + ": " + plaintext).c_str());
+				DEBUG_PRINTLN(("Received from node " + std::to_string(senderNodeId) + ": " + plaintext).c_str());
 				if (comm->getReceiveFromCallback()) {
 					comm->getReceiveFromCallback()(plaintext, senderNodeId);
 				}

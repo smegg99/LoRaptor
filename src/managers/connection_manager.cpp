@@ -32,7 +32,6 @@ std::vector<Connection*> ConnectionManager::getConnections() {
 Connection* ConnectionManager::getConnection(const std::string id) {
 	for (Connection* conn : connections) {
 		DEBUG_PRINTLN(("Checking connection: " + conn->getID()).c_str());
-		DEBUG_PRINTLN(conn->getID() == id);
 		if (conn->getID() == id) return conn;
 	}
 	return nullptr;
@@ -55,7 +54,9 @@ void ConnectionManager::processIncomingMessage(const std::string& msg, const uin
 				Message m(p.getContent(), p.getEpoch(), senderNodeID);
 				std::string msgHash = m.getHash();
 				conn->storeIncomingMessage(m);
+#ifndef DISABLE_CONNECTION_LAYER_ACK
 				conn->sendACK(senderNodeID, msgHash);
+#endif
 			}
 		}
 		else {
@@ -102,8 +103,8 @@ void ConnectionManager::processOutgoingMessages() {
 					vTaskDelay(100 / portTICK_PERIOD_MS);
 				}
 
-#ifdef IGNORE_RECIPIENT_ACK
-				if (!msg.isAcknowledged() && msg.getRetries() == 0) {
+#ifdef DISABLE_CONNECTION_LAYER_ACK
+				if (!msg.isAcknowledged() && msg.getRetries() > 0) {
 					msg.markAsAcknowledged();
 					DEBUG_PRINTLN(("Auto-acknowledging message (ACK ignored) with hash: " + msg.getHash()).c_str());
 				}

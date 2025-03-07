@@ -102,7 +102,6 @@ void Connection::sendACK(uint16_t senderNodeID, const std::string& msgHash) {
 	}
 	if (comm) {
 		comm->sendTo(senderNodeID, encodedACK);
-		DEBUG_PRINTLN(("Sent ACK to node " + std::to_string(senderNodeID) + " for message " + msgHash).c_str());
 	}
 }
 

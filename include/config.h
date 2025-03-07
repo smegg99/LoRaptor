@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-//#define DEBUG_MODE
+// #define DEBUG_MODE
 #ifdef DEBUG_MODE
 #include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -20,7 +20,7 @@
 
 #define COMMANDS_QUEUE_LENGTH 32
 #define MESSAGE_BUFFER_SIZE 64
-#define IGNORE_RECIPIENT_ACK
+#define DISABLE_CONNECTION_LAYER_ACK
 
 #define RETRY_INTERVAL 5000
 #define MAX_RETRIES 5
@@ -35,9 +35,6 @@
 #define NUS_RX_CHARACTERISTIC_UUID "6E400002-B5A3-F393-E0A9-E50E24DCCA9E" // Client -> Device
 #define NUS_TX_CHARACTERISTIC_UUID "6E400003-B5A3-F393-E0A9-E50E24DCCA9E" // Device -> Client
 
-#define RESERVED_COMMAND_PREFIX "/"
-#define RESERVED_EXECUTABLE_COMMAND_PREFIX "!"
-
 #define RGB_FEEDBACK_ENABLED
 #ifdef RGB_FEEDBACK_ENABLED
 #define COMMON_ANODE
@@ -47,7 +44,7 @@
 #endif
 
 // Use for debugging, comment out for production
-#define USE_SERIAL_COMM
+// #define USE_SERIAL_COMM
 #define SERIAL_BAUD_RATE 115200
 
 #define LORA_MISO 12

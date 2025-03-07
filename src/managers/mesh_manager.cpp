@@ -12,6 +12,8 @@ MeshManager::MeshManager() {}
 
 void MeshManager::init() {
 	DEBUG_PRINTLN("MeshManager initialized");
+	std::vector<uint16_t> recipients = {53052, 16888};
+	connectionManager.createConnection("debug", "debug", recipients, &loraComm);
 	loraComm.init();
 	loraComm.startReceiveTask();
 }
@@ -26,8 +28,13 @@ void MeshManager::sendMessage(Connection* connection, const std::string& prepare
 		executeErrorCommand(ERROR_CONN_NO_RECIPIENTS);
 		return;
 	}
+	uint16_t localAddress = loraComm.getRadio().getLocalAddress();
 	for (const auto& recipient : recipients) {
-		loraComm.sendTo(recipient, preparedPayloadContent);
+		if (recipient != localAddress) {
+			loraComm.sendTo(recipient, preparedPayloadContent);
+		} else {
+			DEBUG_PRINTLN("Ignoring sending to self");
+		}
 	}
 }
 

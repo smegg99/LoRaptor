@@ -19,28 +19,28 @@ void RGBFeedback::initializeDefaults() {
 		0.0f, 1.0f, 0.75f,
 		0.0f, 0.15f, 0.075f,
 		EFFECT_BLINK,
-		20,
-		100,
+		50,
+		300,
 		1.0f,
-		INTERP_LINEAR
+		INTERP_SINUSOIDAL
 	};
 
 	defaults[ACTION_COMM_TRANSMITTED] = {
 		1.0f, 0.5f, 0.0f,
 		0.15f, 0.075f, 0.0f,
 		EFFECT_BLINK,
-		20,
-		100,
+		50,
+		300,
 		1.0f,
-		INTERP_LINEAR
+		INTERP_SINUSOIDAL
 	};
 
 	defaults[ACTION_COMM_DELIVERED] = {
 		0.0f, 1.0f, 0.0f,
 		0.0f, 0.15f, 0.0f,
 		EFFECT_BLINK,
-		20,
-		100,
+		50,
+		200,
 		1.0f,
 		INTERP_LINEAR
 	};
@@ -56,7 +56,7 @@ void RGBFeedback::initializeDefaults() {
 	};
 
 	defaults[ACTION_COMM_DISCONNECTED] = {
-		1.0f, 0.8f, 0.0f,
+		1.0f, 0.2f, 0.0f,
 		0.0f, 0.0f, 0.0f,
 		EFFECT_BLINK,
 		100,
@@ -66,13 +66,13 @@ void RGBFeedback::initializeDefaults() {
 	};
 
 	defaults[ACTION_COMM_WAITING] = {
-		0.3f, 0.0f, 1.0f,
-		0.0f, 0.6f, 1.0f,
+		0.0f, 0.0f, 1.0f,
+		0.0f, 0.5f, 0.8f,
 		EFFECT_GRADIENT,
-		500,
+		1000,
 		0,
 		1.0f,
-		INTERP_SINUSOIDAL
+		INTERP_EXPONENTIAL
 	};
 
 	defaults[ACTION_MESH_ACTIVE] = {
