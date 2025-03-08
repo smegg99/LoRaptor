@@ -86,6 +86,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         privateKey: _privateKeyController.text,
         avatarPath: _avatarPath,
         ownerNodeID: 0, // TODO: Change this to the reported node ID
+        recipientNodeIDs: [],
       );
 
       await box.add(newElement);
@@ -277,7 +278,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
-            onPressed: _handleScanQRCode, // Check permission on tap
+            onPressed: _handleScanQRCode,
           ),
           Padding(
             padding: const EdgeInsets.only(right: 8),

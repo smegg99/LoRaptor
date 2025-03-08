@@ -2,10 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/provider.dart';
 import 'package:raptchat/localization/localization.dart';
-import 'package:raptchat/managers/ble_device_manager.dart';
-import 'package:raptchat/models/ble_device.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/widgets/custom_navigation_bar.dart';
 import 'package:raptchat/screens/home_screen.dart';
@@ -94,17 +91,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  // Define a scan function for BLE devices.
-  void _scanForDevices(BuildContext context) {
-    final deviceManager = Provider.of<BleDeviceManager>(context, listen: false);
-    deviceManager.clearAvailableDevices();
-    // Simulate discovering two BLE devices with a NUS service.
-    deviceManager.addAvailableDevice(
-        BleDevice(displayName: "BLE Device A", nodeId: 101));
-    deviceManager.addAvailableDevice(
-        BleDevice(displayName: "BLE Device B", nodeId: 102));
-  }
-
   @override
   Widget build(BuildContext context) {
     String appBarTitle;
@@ -166,17 +152,8 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ]
-            : _currentIndex == 1
-                ? [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: IconButton(
-                        icon: const Icon(Icons.bluetooth_searching),
-                        onPressed: () => _scanForDevices(context),
-                      ),
-                    ),
-                  ]
-                : null,
+            // For the Devices tab, no action is needed.
+            : null,
       ),
       body: IndexedStack(
         index: _currentIndex,
@@ -190,7 +167,6 @@ class _MainScreenState extends State<MainScreen> {
             onToggleSelectItem: _toggleSelectItem,
             onToggleSelectionMode: _toggleSelectionMode,
           ),
-          // Pass isActive flag to DevicesScreen.
           DevicesScreen(isActive: _currentIndex == 1),
           const MeshScreen(),
         ],

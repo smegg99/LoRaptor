@@ -17,19 +17,28 @@ class BleDeviceAdapter extends TypeAdapter<BleDevice> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return BleDevice(
-      displayName: fields[0] as String,
-      nodeId: fields[1] as int,
+      originalName: fields[0] as String,
+      displayName: fields[1] as String?,
+      nodeId: fields[2] as int,
+      macAddress: fields[3] as String,
+      lastSeen: fields[4] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, BleDevice obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(5)
       ..writeByte(0)
-      ..write(obj.displayName)
+      ..write(obj.originalName)
       ..writeByte(1)
-      ..write(obj.nodeId);
+      ..write(obj.displayName)
+      ..writeByte(2)
+      ..write(obj.nodeId)
+      ..writeByte(3)
+      ..write(obj.macAddress)
+      ..writeByte(4)
+      ..write(obj.lastSeen);
   }
 
   @override

@@ -20,6 +20,7 @@ class ConnectionElementAdapter extends TypeAdapter<ConnectionElement> {
       name: fields[0] as String,
       order: fields[1] as int,
       privateKey: fields[2] as String,
+      recipientNodeIDs: (fields[5] as List).cast<int>(),
       avatarPath: fields[3] as String?,
       ownerNodeID: fields[4] as int,
     );
@@ -28,7 +29,7 @@ class ConnectionElementAdapter extends TypeAdapter<ConnectionElement> {
   @override
   void write(BinaryWriter writer, ConnectionElement obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class ConnectionElementAdapter extends TypeAdapter<ConnectionElement> {
       ..writeByte(3)
       ..write(obj.avatarPath)
       ..writeByte(4)
-      ..write(obj.ownerNodeID);
+      ..write(obj.ownerNodeID)
+      ..writeByte(5)
+      ..write(obj.recipientNodeIDs);
   }
 
   @override

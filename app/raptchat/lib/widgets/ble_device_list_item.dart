@@ -4,22 +4,45 @@ import 'package:raptchat/models/ble_device.dart';
 class BleDeviceListItem extends StatelessWidget {
   final BleDevice device;
   final VoidCallback onTap;
+  final bool isConnecting;
+  final bool isConnected;
+  final bool isSaved;
 
   const BleDeviceListItem({
     super.key,
     required this.device,
     required this.onTap,
+    this.isConnecting = false,
+    this.isConnected = false,
+    this.isSaved = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return ListTile(
+      tileColor: isConnected ? theme.colorScheme.primaryContainer : null,
       leading: CircleAvatar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(Icons.bluetooth, color: Colors.white),
+        backgroundColor: theme.colorScheme.primary,
+        child: isSaved
+            ? Icon(Icons.star, color: theme.colorScheme.onPrimary)
+            : Icon(Icons.bluetooth, color: theme.colorScheme.onPrimary),
       ),
       title: Text(device.displayName),
-      subtitle: Text('Node ID: ${device.nodeId}'),
+      subtitle: Text('MAC: ${device.macAddress}'),
+      trailing: isConnecting
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.secondary,
+              ),
+            )
+          : isConnected
+              ? Icon(Icons.check, color: theme.colorScheme.secondary)
+              : null,
       onTap: onTap,
     );
   }

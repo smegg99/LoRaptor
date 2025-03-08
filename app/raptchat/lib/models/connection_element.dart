@@ -21,10 +21,14 @@ class ConnectionElement extends HiveObject {
   @HiveField(4)
   int ownerNodeID;
 
+  @HiveField(5)
+  List<int> recipientNodeIDs = [];
+
   ConnectionElement({
     required this.name,
     required this.order,
     required this.privateKey,
+    required this.recipientNodeIDs,
     this.avatarPath,
     this.ownerNodeID = 0,
   });
@@ -36,6 +40,7 @@ class ConnectionElement extends HiveObject {
       'private_key': privateKey,
       'avatar_path': avatarPath,
       'owner_node_id': ownerNodeID,
+      'recipient_node_ids': recipientNodeIDs,
     };
   }
 
@@ -44,7 +49,8 @@ class ConnectionElement extends HiveObject {
       name: json['name'] ?? '',
       order: json['order'] ?? 0,
       privateKey: json['private_key'] ?? '',
-      avatarPath: json['avatar_path'],
+      avatarPath: json['avatar_path'] ?? '',
+      recipientNodeIDs: json['recipient_node_ids'] ?? [],
       ownerNodeID: json['owner_node_id'] ?? 0,
     );
   }

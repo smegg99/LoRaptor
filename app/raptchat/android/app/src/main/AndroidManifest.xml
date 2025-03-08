@@ -1,6 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for BLE scanning and location -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- For Android 12+ -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    
     <application
-        android:label="raptchat"
+        android:label="RaptChat"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
