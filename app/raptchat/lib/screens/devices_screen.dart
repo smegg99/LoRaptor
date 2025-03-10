@@ -1,3 +1,4 @@
+// lib/screens/devices_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -105,7 +106,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         children: [
                           ElevatedButton(
                             onPressed: () async {
-                              // Save custom name to Hive box.
                               final box = await Hive.openBox<String>(
                                   'saved_ble_devices');
                               final newName = _customNameController.text.trim();
@@ -121,7 +121,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           ),
                           ElevatedButton(
                             onPressed: () async {
-                              // Forget custom name.
                               final box = await Hive.openBox<String>(
                                   'saved_ble_devices');
                               await box.delete(device.macAddress);
@@ -142,7 +141,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           Navigator.pop(context);
                         },
                         child: Text(AppLocalizations.of(context)
-                            .translate('devices.disconnect')),
+                            .translate('labels.disconnect')),
                       ),
                     ],
                   ),
@@ -161,7 +160,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
   Widget build(BuildContext context) {
     return Consumer<BleDeviceManager>(
       builder: (context, manager, child) {
-        // If Bluetooth is disabled, clear devices and show a disabled indicator.
         if (!manager.bluetoothEnabled) {
           if (manager.availableDevices.isNotEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -181,7 +179,6 @@ class _DevicesScreenState extends State<DevicesScreen> {
             ),
           );
         }
-
         return Column(
           children: [
             if (manager.isScanning)
@@ -221,6 +218,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         final device = manager.availableDevices[index];
                         final isConnecting =
                             manager.connectingDeviceMac == device.macAddress;
+                        // Mark as error if this device was last connected, currently not connected, and has an error flag.
+                        final connectionError =
+                            (manager.lastConnectedDeviceMac ==
+                                    device.macAddress &&
+                                manager.connectedDevice == null &&
+                                manager.hasConnectionError(device.macAddress));
                         final isConnected =
                             manager.connectedDevice?.macAddress ==
                                 device.macAddress;
@@ -231,6 +234,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           isConnecting: isConnecting,
                           isConnected: isConnected,
                           isSaved: isSaved,
+                          connectionError: connectionError,
                           onTap: () {
                             Provider.of<BleDeviceManager>(context,
                                     listen: false)

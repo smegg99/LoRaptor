@@ -97,6 +97,8 @@ class Dispatcher {
 
   bool _dispatchSingleCommand(String command) {
     List<String> tokens = _tokenize(command);
+    print("Dispatching command: '$command'");
+    print("Tokens: $tokens");
     if (tokens.isEmpty) return false;
 
     // Use _matchCommand with _MatchResult to update the token index.
@@ -271,6 +273,11 @@ class Dispatcher {
         index++;
       }
       outArgs.add(arg);
+    }
+
+    print("Parsed arguments:");
+    for (var arg in outArgs) {
+      print("  ${arg.name}: ${arg.values}");
     }
     return true;
   }

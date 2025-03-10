@@ -1,35 +1,38 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'settings_element.dart';
+part of 'connection_recipient.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class SettingsElementAdapter extends TypeAdapter<SettingsElement> {
+class ConnectionRecipientAdapter extends TypeAdapter<ConnectionRecipient> {
   @override
-  final int typeId = 3;
+  final int typeId = 2;
 
   @override
-  SettingsElement read(BinaryReader reader) {
+  ConnectionRecipient read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return SettingsElement(
-      theme: fields[0] as String,
-      language: fields[1] as String,
+    return ConnectionRecipient(
+      customName: fields[0] as String,
+      avatarPath: fields[1] as String?,
+      nodeId: fields[2] as int,
     );
   }
 
   @override
-  void write(BinaryWriter writer, SettingsElement obj) {
+  void write(BinaryWriter writer, ConnectionRecipient obj) {
     writer
-      ..writeByte(2)
+      ..writeByte(3)
       ..writeByte(0)
-      ..write(obj.theme)
+      ..write(obj.customName)
       ..writeByte(1)
-      ..write(obj.language);
+      ..write(obj.avatarPath)
+      ..writeByte(2)
+      ..write(obj.nodeId);
   }
 
   @override
@@ -38,7 +41,7 @@ class SettingsElementAdapter extends TypeAdapter<SettingsElement> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SettingsElementAdapter &&
+      other is ConnectionRecipientAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

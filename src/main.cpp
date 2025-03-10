@@ -69,12 +69,14 @@ void commProcessTask(void* parameter) {
 	}
 }
 
+#ifndef DISABLE_OUTGOING_MESSAGES_BUFFER
 void outgoingMessageTask(void* parameter) {
 	for (;;) {
 		connectionManager.processOutgoingMessages();
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
+#endif
 
 void onReceiveCallback(const std::string& cmd) {
 	DEBUG_PRINTLN("Received command: " + String(cmd.c_str()));
@@ -86,6 +88,7 @@ void onConnectedCallback() {
 #ifdef RGB_FEEDBACK_ENABLED
 	rgbFeedback.setAction(ACTION_COMM_CONNECTED);
 #endif
+	connectionManager.clearConnections();
 }
 
 void onDisconnectedCallback() {
@@ -93,6 +96,7 @@ void onDisconnectedCallback() {
 #ifdef RGB_FEEDBACK_ENABLED
 	rgbFeedback.setAction(ACTION_COMM_DISCONNECTED);
 #endif
+	connectionManager.clearConnections();
 }
 
 void onWaitingForConnectionCallback() {
@@ -175,7 +179,9 @@ void setup() {
 
 	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 32768, NULL, 1, NULL);
 	xTaskCreate(commProcessTask, "CommProcessTask", 32768, NULL, 1, NULL);
+#ifndef DISABLE_OUTGOING_MESSAGES_BUFFER
 	xTaskCreate(outgoingMessageTask, "OutgoingMessageTask", 32768, NULL, 1, NULL);
+#endif
 }
 
 void loop() {

@@ -80,20 +80,8 @@
   "project": {
     "files": [
       {
-        "name": "LoRaptor.kicad_sch",
-        "open": true,
-        "window": {
-          "display": 0,
-          "maximized": true,
-          "pos_x": 1500,
-          "pos_y": -592,
-          "size_x": 1080,
-          "size_y": 1920
-        }
-      },
-      {
         "name": "LoRaptor.kicad_pcb",
-        "open": true,
+        "open": false,
         "window": {
           "display": 0,
           "maximized": true,
@@ -101,6 +89,18 @@
           "pos_y": 290,
           "size_x": 1920,
           "size_y": 1038
+        }
+      },
+      {
+        "name": "LoRaptor.kicad_sch",
+        "open": false,
+        "window": {
+          "display": 0,
+          "maximized": true,
+          "pos_x": 1500,
+          "pos_y": -592,
+          "size_x": 1080,
+          "size_y": 1920
         }
       }
     ]

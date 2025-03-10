@@ -1,12 +1,13 @@
 // lib/widgets/connection_list_item.dart
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:raptchat/models/connection_element.dart';
 
 class ConnectionListItem extends StatefulWidget {
   final ConnectionElement element;
+  final bool
+      isActive; // New property: true if connection belongs to the current LoRaptor
   final bool isSelected;
   final bool isSelectionMode;
   final VoidCallback onTap;
@@ -16,6 +17,7 @@ class ConnectionListItem extends StatefulWidget {
   const ConnectionListItem({
     super.key,
     required this.element,
+    required this.isActive,
     required this.isSelected,
     required this.isSelectionMode,
     required this.onTap,
@@ -32,6 +34,16 @@ class _ConnectionListItemState extends State<ConnectionListItem> {
 
   @override
   Widget build(BuildContext context) {
+    // Define styles based on whether this connection is active.
+    final titleStyle = widget.isActive
+        ? theme.textTheme.titleLarge
+        : theme.textTheme.titleLarge?.copyWith(color: Colors.grey);
+    final subtitleStyle = widget.isActive
+        ? theme.textTheme.bodySmall
+        : theme.textTheme.bodySmall?.copyWith(color: Colors.grey);
+    final avatarBg =
+        widget.isActive ? theme.colorScheme.onSurfaceVariant : Colors.grey[400];
+
     return GestureDetector(
       onTap: widget.onTap,
       onLongPress: () {
@@ -47,7 +59,7 @@ class _ConnectionListItemState extends State<ConnectionListItem> {
               padding: const EdgeInsets.only(right: 12.0),
               child: CircleAvatar(
                 radius: 32,
-                backgroundColor: theme.colorScheme.onSurfaceVariant,
+                backgroundColor: avatarBg,
                 backgroundImage: widget.element.avatarPath != null
                     ? FileImage(File(widget.element.avatarPath!))
                     : null,
@@ -72,30 +84,24 @@ class _ConnectionListItemState extends State<ConnectionListItem> {
                 children: [
                   Text(
                     widget.element.name,
-                    style: theme.textTheme.titleLarge,
+                    style: titleStyle,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                   const SizedBox(height: 4.0),
                   Text(
-                    // TODO: Replace with last message.
                     widget.element.privateKey.substring(
                         0,
                         widget.element.privateKey.length > 20
                             ? 20
                             : widget.element.privateKey.length),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w300,
-                      color: theme.colorScheme.onSurfaceVariant
-                          .withAlpha((0.7 * 255).round()),
-                    ),
+                    style: subtitleStyle,
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                 ],
               ),
             ),
-            // Selection checkbox.
             if (widget.isSelectionMode)
               Checkbox(
                 value: widget.isSelected,

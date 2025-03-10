@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 import 'package:raptchat/localization/localization.dart';
+import 'package:raptchat/managers/ble_device_manager.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/widgets/custom_navigation_bar.dart';
 import 'package:raptchat/screens/home_screen.dart';
@@ -28,6 +30,18 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _handleCreate() {
+    final bleManager = Provider.of<BleDeviceManager>(context, listen: false);
+    if (bleManager.connectedDevice == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            AppLocalizations.of(context)
+                .translate('labels.no_device_paired'),
+          ),
+        ),
+      );
+      return;
+    }
     Navigator.pushNamed(context, '/edit', arguments: null);
   }
 
@@ -152,7 +166,6 @@ class _MainScreenState extends State<MainScreen> {
                       ),
                     ),
                   ]
-            // For the Devices tab, no action is needed.
             : null,
       ),
       body: IndexedStack(

@@ -72,7 +72,7 @@ void deleteConnectionCallback(const Command& cmd) {
 	}
 }
 
-void addRecipientCallback(const Command& cmd) {
+void createRecipientCallback(const Command& cmd) {
 	std::string connectionID(cmd.arguments[0].values[0].toString());
 	uint16_t recipientID = static_cast<uint16_t>(std::stoi(cmd.arguments[1].values[0].toString()));
 	Connection* c = connectionManager.getConnection(connectionID);
@@ -84,7 +84,7 @@ void addRecipientCallback(const Command& cmd) {
 	executeReturnCommand(MSG_RECIPIENT_ADDED);
 }
 
-void removeRecipientCallback(const Command& cmd) {
+void deleteRecipientCallback(const Command& cmd) {
 	std::string connectionID(cmd.arguments[0].values[0].toString());
 	uint16_t recipientID = static_cast<uint16_t>(std::stoi(cmd.arguments[1].values[0].toString()));
 	Connection* c = connectionManager.getConnection(connectionID);
@@ -116,7 +116,15 @@ void sendCallback(const Command& cmd) {
 	outgoingMsg.encodedContent = p.getContent();
 	outgoingMsg.updateLastSentTime(millis());
 
+#ifdef DISABLE_OUTGOING_MESSAGES_BUFFER
+	bool success = connectionManager.processOutgoingMessageNow(outgoingMsg, c);
+	if (!success) {
+		executeErrorCommand(ERROR_COMM_FAILED_PREPARE);
+	}
+	executeReturnCommand(MSG_SEND_SUCCESS);
+#else
 	c->storeOutgoingMessage(outgoingMsg);
+#endif
 }
 
 void flushCallback(const Command& cmd) {
@@ -235,15 +243,15 @@ void registerCommands() {
 	deleteConnectionCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
 	deleteCmd.addSubcommand(deleteConnectionCmd);
 
-	Command addRecipientCmd("connectionRecipient", "Adds a recipient to a connection", output, addRecipientCallback);
-	addRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
-	addRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
-	createCmd.addSubcommand(addRecipientCmd);
+	Command createRecipientCmd("connectionRecipient", "Adds a recipient to a connection", output, createRecipientCallback);
+	createRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
+	createRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
+	createCmd.addSubcommand(createRecipientCmd);
 
-	Command removeRecipientCmd("connectionRecipient", "Removes a recipient from a connection", output, removeRecipientCallback);
-	removeRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
-	removeRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
-	deleteCmd.addSubcommand(removeRecipientCmd);
+	Command deleteRecipientCmd("connectionRecipient", "Removes a recipient from a connection", output, deleteRecipientCallback);
+	deleteRecipientCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
+	deleteRecipientCmd.addArgSpec(ArgSpec("r", VAL_INT, true, "Recipient ID"));
+	deleteCmd.addSubcommand(deleteRecipientCmd);
 
 	// --- Messaging ---
 	Command sendCmd("send", "Send a message on a connection", output, sendCallback);

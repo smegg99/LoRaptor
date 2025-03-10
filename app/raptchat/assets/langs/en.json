@@ -39,7 +39,15 @@
 		"language": "Language",
 		"theme": "Theme",
 		"version": "Version",
-		"source_code": "Source Code"
+		"source_code": "Source Code",
+		"save_name": "Save Name",
+		"forget_name": "Forget Name",
+		"disconnect": "Disconnect",
+		"bluetooth_disabled": "Bluetooth is disabled",
+		"custom_name": "Custom Name",
+		"scanning": "Scanning...",
+		"no_devices": "No devices found",
+		"no_device_paired": "No device paired, pair a device first!"
 	},
 	"screens": {
 		"home": {

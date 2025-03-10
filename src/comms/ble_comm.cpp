@@ -67,6 +67,7 @@ void BLEComm::init() {
 
 void BLEComm::send(const std::string& data) {
 	if (pTxCharacteristic) {
+		DEBUG_PRINTLN(("Sending: " + data).c_str());
 		pTxCharacteristic->setValue(data.c_str());
 		pTxCharacteristic->notify();
 
@@ -120,7 +121,7 @@ void BLEComm::MyBLEServerCallbacks::onDisconnect(BLEServer* pServer) {
 void BLEComm::NUSCallbacks::onWrite(BLECharacteristic* pCharacteristic) {
 	std::string rxValue = pCharacteristic->getValue();
 	if (!rxValue.empty()) {
-		// DEBUG_PRINTLN(rxValue.c_str());
+		DEBUG_PRINTLN(("Received: " + rxValue).c_str());
 		if (_parent->_receiveCallback) {
 			_parent->_receiveCallback(rxValue);
 		}

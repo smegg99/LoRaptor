@@ -1,3 +1,4 @@
+// lib/models/ble_device.dart
 import 'package:hive/hive.dart';
 
 part 'ble_device.g.dart';
@@ -13,6 +14,7 @@ class BleDevice extends HiveObject {
   String displayName;
 
   @HiveField(2)
+  // Node ID reported by the device. It's basically LoRaptor's MAC address.
   int nodeId;
 
   @HiveField(3)

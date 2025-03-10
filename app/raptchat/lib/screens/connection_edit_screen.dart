@@ -1,3 +1,4 @@
+// lib/screens/connection_edit_screen.dart
 import 'dart:io';
 import 'dart:convert';
 import 'dart:math';
@@ -6,11 +7,13 @@ import 'package:hive/hive.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:raptchat/localization/localization.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:raptchat/models/connection_element.dart';
+import 'package:raptchat/models/connection_recipient.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'package:image_cropper/image_cropper.dart';
+import 'package:provider/provider.dart';
+import 'package:raptchat/managers/ble_device_manager.dart';
 
 class ConnectionEditScreen extends StatefulWidget {
   final ConnectionElement? element;
@@ -30,17 +33,34 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
   late TextEditingController _nameController;
   late TextEditingController _privateKeyController;
   bool _isObscure = true;
-  String? _avatarPath; // holds the file path of the selected avatar
+  String? _avatarPath;
+  List<ConnectionRecipient> _recipients = [];
 
   AppLocalizations get localizations => AppLocalizations.of(context);
 
   @override
   void initState() {
     super.initState();
+    // For new connections, the display name is entered by the user.
+    // For existing connections, display name is editable; connectionID and key are read-only.
     _nameController = TextEditingController(text: widget.element?.name ?? '');
     _privateKeyController =
         TextEditingController(text: widget.element?.privateKey ?? '');
     _avatarPath = widget.element?.avatarPath;
+    if (widget.element != null) {
+      _recipients = List.from(widget.element!.recipients);
+    } else {
+      // When creating a new connection, automatically add a default recipient
+      // representing the current device using its custom name.
+      final bleManager = Provider.of<BleDeviceManager>(context, listen: false);
+      final currentDevice = bleManager.connectedDevice;
+      if (currentDevice != null) {
+        _recipients.add(ConnectionRecipient(
+          customName: currentDevice.displayName,
+          nodeId: currentDevice.nodeId,
+        ));
+      }
+    }
   }
 
   @override
@@ -53,13 +73,60 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
   String _resolveNameConflict(String baseName, List<String> existingNames) {
     String newName = baseName;
     int count = 1;
-
     while (existingNames.contains(newName)) {
       newName = '$baseName ($count)';
       count++;
     }
-
     return newName;
+  }
+
+  String _resolveRecipientNameConflict(String baseName) {
+    String newName = baseName;
+    int count = 1;
+    while (_recipients
+        .any((r) => r.customName.toLowerCase() == newName.toLowerCase())) {
+      newName = '$baseName ($count)';
+      count++;
+    }
+    return newName;
+  }
+
+  Future<void> _editRecipientName(int index) async {
+    final currentName = _recipients[index].customName;
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        final controller = TextEditingController(text: currentName);
+        return AlertDialog(
+          title: Text("Edit Recipient Name"),
+          content: TextField(
+            controller: controller,
+            decoration: InputDecoration(labelText: "Custom Name"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, null),
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final text = controller.text.trim();
+                if (text.isNotEmpty) {
+                  Navigator.pop(context, text);
+                }
+              },
+              child: Text("Save"),
+            )
+          ],
+        );
+      },
+    );
+    if (newName != null && newName.isNotEmpty) {
+      final resolvedName = _resolveRecipientNameConflict(newName);
+      setState(() {
+        _recipients[index].customName = resolvedName;
+      });
+    }
   }
 
   Future<void> _saveChanges() async {
@@ -73,41 +140,85 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
       return;
     }
 
+    // Validate recipients, at least one must exist and not all be the current device.
+    final currentNodeID = Provider.of<BleDeviceManager>(context, listen: false)
+            .connectedDevice
+            ?.nodeId ??
+        0;
+    if (_recipients.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Please add at least one recipient.")));
+      return;
+    }
+    if (_recipients.every((r) => r.nodeId == currentNodeID)) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Cannot add only your own device as recipient.")));
+      return;
+    }
+
     final box = Hive.box<ConnectionElement>('connection_elements');
     final existingNames = box.values.map((e) => e.name).toList();
+    final bleManager = Provider.of<BleDeviceManager>(context, listen: false);
 
     if (widget.element == null) {
       final resolvedName =
           _resolveNameConflict(_nameController.text, existingNames);
+      final newConnectionID = base64
+          .encode(List<int>.generate(16, (_) => Random.secure().nextInt(256)));
 
       final newElement = ConnectionElement(
+        connectionID: newConnectionID,
         name: resolvedName,
         order: box.values.length,
         privateKey: _privateKeyController.text,
         avatarPath: _avatarPath,
-        ownerNodeID: 0, // TODO: Change this to the reported node ID
-        recipientNodeIDs: [],
+        ownerNodeID: currentNodeID,
+        recipients: _recipients,
       );
 
       await box.add(newElement);
+
+      final command =
+          'create connection -id "$newConnectionID" -k "${_privateKeyController.text}" -r [${_recipients.map((r) => r.nodeId).join(", ")}]';
+      bleManager.sendNUSCommand(command);
     } else {
-      final currentName = widget.element!.name;
-      final newName = _nameController.text;
-
-      if (newName != currentName) {
-        final resolvedName = _resolveNameConflict(newName, existingNames);
-        widget.element!.name = resolvedName;
-      }
-
-      widget.element!.privateKey = _privateKeyController.text;
+      widget.element!.name = _nameController.text;
       widget.element!.avatarPath = _avatarPath;
 
+      // Compare original recipients with updated list.
+      final originalRecipients = widget.element!.recipients;
+      final addedRecipients = _recipients
+          .where(
+              (nr) => !originalRecipients.any((or) => or.nodeId == nr.nodeId))
+          .toList();
+      final removedRecipients = originalRecipients
+          .where((or) => !_recipients.any((nr) => nr.nodeId == or.nodeId))
+          .toList();
+
+      widget.element!.recipients = _recipients;
       await widget.element!.save();
+
+      // Allow recipient modifications only if the current device is the owner.
+      final allowModification = widget.element!.ownerNodeID == currentNodeID;
+      if (allowModification) {
+        // For each added recipient (except the default current device), send a create command.
+        for (final r in addedRecipients) {
+          if (r.nodeId == currentNodeID) continue;
+          final cmd =
+              'create connectionRecipient -id "${widget.element!.connectionID}" -r "${r.nodeId}"';
+          bleManager.sendNUSCommand(cmd);
+        }
+        // For each removed recipient (except the default current device), send a delete command.
+        for (final r in removedRecipients) {
+          if (r.nodeId == currentNodeID) continue;
+          final cmd =
+              'delete connectionRecipient -id "${widget.element!.connectionID}" -r ${r.nodeId}';
+          bleManager.sendNUSCommand(cmd);
+        }
+      }
     }
 
-    if (mounted) {
-      Navigator.of(context).pop();
-    }
+    Navigator.of(context).pop();
   }
 
   void _generatePrivateKey() {
@@ -117,101 +228,10 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
     });
   }
 
-  void _showQRCode() {
-    final data = jsonEncode({
-      'name': _nameController.text,
-      'private_key': _privateKeyController.text,
-      'avatar_path': _avatarPath,
-    });
-
-    if (mounted) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Connection QR Code"),
-          content: SizedBox(
-            width: 200,
-            height: 200,
-            child: Center(
-              child: QrImageView(
-                data: data,
-                version: QrVersions.auto,
-                size: 200.0,
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Close"),
-            ),
-          ],
-        ),
-      );
-    }
-  }
-
-  void _scanQRCode() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(title: Text("Scan QR Code")),
-          body: MobileScanner(
-            onDetect: (capture) {
-              final List<Barcode> barcodes = capture.barcodes;
-              for (final barcode in barcodes) {
-                if (barcode.rawValue != null) {
-                  final data = jsonDecode(barcode.rawValue!);
-                  if (mounted) {
-                    setState(() {
-                      _nameController.text = data['name'] ?? '';
-                      _privateKeyController.text = data['private_key'] ?? '';
-                      _avatarPath = data['avatar_path'];
-                    });
-                    Navigator.pop(context);
-                  }
-                  break;
-                }
-              }
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<bool> _requestCameraPermission() async {
-    final status = await Permission.camera.request();
-    return status.isGranted;
-  }
-
-  Future<void> _handleScanQRCode() async {
-    bool hasPermission = await Permission.camera.isGranted;
-    if (!hasPermission) {
-      hasPermission = await _requestCameraPermission();
-    }
-    if (hasPermission) {
-      _scanQRCode();
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(localizations.translate(
-                'screens.connection_edit.labels.camera_permission_required')),
-          ),
-        );
-      }
-    }
-  }
-
   Future<void> _pickAvatarImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      if (!mounted) return;
-      final Color primaryColor = Theme.of(context).primaryColor;
-
       final croppedFile = await ImageCropper().cropImage(
         sourcePath: image.path,
         aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
@@ -220,7 +240,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
           AndroidUiSettings(
             toolbarTitle: 'Adjust Avatar',
             cropStyle: CropStyle.circle,
-            toolbarColor: primaryColor,
+            toolbarColor: Theme.of(context).primaryColor,
             toolbarWidgetColor: Colors.white,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
@@ -242,6 +262,320 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         });
       }
     }
+  }
+
+  Future<void> _pickRecipientAvatar(int index) async {
+    final currentNodeID = Provider.of<BleDeviceManager>(context, listen: false)
+            .connectedDevice
+            ?.nodeId ??
+        0;
+
+    final allowModification = widget.element == null ||
+        (widget.element != null &&
+            widget.element!.ownerNodeID == currentNodeID);
+    if (!allowModification) return;
+
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      final croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressQuality: 100,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Adjust Recipient Avatar',
+            cropStyle: CropStyle.circle,
+            toolbarColor: Theme.of(context).primaryColor,
+            toolbarWidgetColor: Colors.white,
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            hideBottomControls: true,
+          ),
+          IOSUiSettings(
+            title: 'Adjust Recipient Avatar',
+            cropStyle: CropStyle.circle,
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            aspectRatioPickerButtonHidden: true,
+            rotateButtonsHidden: true,
+          ),
+        ],
+      );
+      if (croppedFile != null) {
+        setState(() {
+          _recipients[index].avatarPath = croppedFile.path;
+        });
+      }
+    }
+  }
+
+  Future<void> _addRecipient() async {
+    final currentNodeID = Provider.of<BleDeviceManager>(context, listen: false)
+            .connectedDevice
+            ?.nodeId ??
+        0;
+
+    final allowModification = widget.element == null ||
+        (widget.element != null &&
+            widget.element!.ownerNodeID == currentNodeID);
+    if (!allowModification) return;
+
+    final newRecipient = await showDialog<ConnectionRecipient>(
+      context: context,
+      builder: (context) {
+        final TextEditingController nameController = TextEditingController();
+        final TextEditingController nodeIdController = TextEditingController();
+        return AlertDialog(
+          title: Text("Add Recipient"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: "Custom Name"),
+              ),
+              TextField(
+                controller: nodeIdController,
+                decoration: InputDecoration(labelText: "Node ID"),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final customName = nameController.text.trim();
+                final nodeId = int.tryParse(nodeIdController.text.trim()) ?? 0;
+                if (customName.isEmpty || nodeId == 0) {
+                  return;
+                }
+                if (nodeId == currentNodeID) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Cannot add current device as recipient."),
+                    ),
+                  );
+                  return;
+                }
+                // Prevent duplicate recipients by node ID.
+                if (_recipients.any((r) => r.nodeId == nodeId)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text("A recipient with this Node ID already exists."),
+                    ),
+                  );
+                  return;
+                }
+                final resolvedName = _resolveRecipientNameConflict(customName);
+                Navigator.pop(
+                  context,
+                  ConnectionRecipient(
+                    customName: resolvedName,
+                    nodeId: nodeId,
+                  ),
+                );
+              },
+              child: Text("Add"),
+            ),
+          ],
+        );
+      },
+    );
+    if (newRecipient != null) {
+      setState(() {
+        _recipients.add(newRecipient);
+      });
+    }
+  }
+
+  void _removeRecipient(int index) {
+    // final removed = _recipients.removeAt(index);
+    // final currentNodeID = Provider.of<BleDeviceManager>(context, listen: false)
+    //         .connectedDevice
+    //         ?.nodeId ??
+    //     0;
+    // final allowModification = widget.element == null ||
+    //     (widget.element != null &&
+    //         widget.element!.ownerNodeID == currentNodeID);
+    // if (widget.element != null && allowModification) {
+    //   final cmd =
+    //       'delete connectionRecipient -id "${widget.element!.connectionID}" -r ${removed.nodeId}';
+    //   Provider.of<BleDeviceManager>(context, listen: false).sendNUSCommand(cmd);
+    // }
+
+    // setState(() {});
+    setState(() {
+      _recipients.removeAt(index);
+    });
+  }
+
+  Widget _buildRecipientsSection() {
+    final currentNodeID = Provider.of<BleDeviceManager>(context, listen: false)
+            .connectedDevice
+            ?.nodeId ??
+        0;
+
+    final bool allowModification = widget.element == null ||
+        (widget.element != null &&
+            widget.element!.ownerNodeID == currentNodeID);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Recipients", style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 8),
+        ...List.generate(_recipients.length, (index) {
+          final r = _recipients[index];
+          return ListTile(
+            leading: allowModification
+                ? GestureDetector(
+                    onTap: () => _pickRecipientAvatar(index),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: r.avatarPath != null
+                          ? FileImage(File(r.avatarPath!))
+                          : null,
+                      child: r.avatarPath == null
+                          ? Text(
+                              r.customName.isNotEmpty
+                                  ? r.customName[0].toUpperCase()
+                                  : '',
+                            )
+                          : null,
+                    ),
+                  )
+                : CircleAvatar(
+                    backgroundColor: Colors.grey.shade300,
+                    backgroundImage: r.avatarPath != null
+                        ? FileImage(File(r.avatarPath!))
+                        : null,
+                    child: r.avatarPath == null
+                        ? Text(
+                            r.customName.isNotEmpty
+                                ? r.customName[0].toUpperCase()
+                                : '',
+                          )
+                        : null,
+                  ),
+            title: Text(r.customName,
+                overflow: TextOverflow.ellipsis, maxLines: 1),
+            subtitle: Text("Node ID: ${r.nodeId}",
+                overflow: TextOverflow.ellipsis, maxLines: 1),
+            trailing: allowModification
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (r.nodeId != currentNodeID)
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () => _removeRecipient(index),
+                        ),
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () => _editRecipientName(index),
+                      ),
+                    ],
+                  )
+                : null,
+          );
+        }),
+        if (allowModification)
+          TextButton.icon(
+            onPressed: _addRecipient,
+            icon: Icon(Icons.add),
+            label: Text("Add Recipient"),
+          ),
+      ],
+    );
+  }
+
+  void _handleScanQRCode() {
+    _scanQRCode();
+  }
+
+  void _scanQRCode() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: Text("Scan Connection QR Code")),
+          body: MobileScanner(
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                if (barcode.rawValue != null) {
+                  final data = jsonDecode(barcode.rawValue!);
+                  // Expected QR data structure:
+                  // {
+                  //   "private_key": "...",
+                  //   "connection_id": "...",
+                  //   "connection_name": "...",
+                  //   "recipients": [{"node_id": 123, "custom_name": "Alice"}, ...],
+                  //   "avatar_path": "..."
+                  // }
+                  setState(() {
+                    _privateKeyController.text = data['private_key'] ?? '';
+                    _nameController.text = data['connection_name'] ?? '';
+                    _avatarPath = data['avatar_path'];
+                    if (data['recipients'] != null) {
+                      List<dynamic> recData = data['recipients'];
+                      _recipients = recData.map((e) {
+                        return ConnectionRecipient(
+                          customName: e['custom_name'] ?? '',
+                          nodeId: e['node_id'] ?? 0,
+                        );
+                      }).toList();
+                    }
+                  });
+                  Navigator.pop(context);
+                  break;
+                }
+              }
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showQRCode() {
+    final data = jsonEncode({
+      'private_key': _privateKeyController.text,
+      'connection_id': widget.element?.connectionID ?? '',
+      'connection_name': _nameController.text,
+      'recipients': _recipients
+          .map((r) => {'node_id': r.nodeId, 'custom_name': r.customName})
+          .toList(),
+      'avatar_path': _avatarPath,
+    });
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Connection QR Code"),
+        content: SizedBox(
+          width: 200,
+          height: 200,
+          child: Center(
+            child: QrImageView(
+              data: data,
+              version: QrVersions.auto,
+              size: 200.0,
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close"),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAvatarPicker() {
@@ -272,21 +606,26 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isEditing = widget.element != null;
     return Scaffold(
       appBar: AppBar(
         title: Text(localizations.translate('screens.connection_edit.title')),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.qr_code_scanner),
-            onPressed: _handleScanQRCode,
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: const Icon(Icons.qr_code),
-              onPressed: _showQRCode,
+          // In creation mode, allow scanning a QR code to import connection info.
+          if (!isEditing)
+            IconButton(
+              icon: const Icon(Icons.qr_code_scanner),
+              onPressed: _handleScanQRCode,
             ),
-          ),
+          // In edit mode, allow showing the QR code for sharing.
+          if (isEditing)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: IconButton(
+                icon: const Icon(Icons.qr_code),
+                onPressed: _showQRCode,
+              ),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: IconButton(
@@ -301,36 +640,78 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         children: [
           _buildAvatarPicker(),
           const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              labelText: localizations.translate('labels.connection_name'),
+          if (isEditing) ...[
+            TextField(
+              controller:
+                  TextEditingController(text: widget.element!.connectionID),
+              decoration: InputDecoration(
+                labelText: "Connection ID (unchangeable)",
+              ),
+              readOnly: true,
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _privateKeyController,
-            decoration: InputDecoration(
-              labelText: localizations.translate('labels.private_key'),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                        _isObscure ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () {
-                      setState(() => _isObscure = !_isObscure);
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.casino),
-                    onPressed: _generatePrivateKey,
-                  ),
-                ],
+            const SizedBox(height: 16),
+            TextField(
+              controller:
+                  TextEditingController(text: widget.element!.privateKey),
+              decoration: InputDecoration(
+                labelText: "Encryption Key (unchangeable)",
+                suffixIcon: IconButton(
+                  icon: Icon(
+                      _isObscure ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () {
+                    setState(() {
+                      _isObscure = !_isObscure;
+                    });
+                  },
+                ),
+              ),
+              readOnly: true,
+              obscureText: _isObscure,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: "Connection Name",
               ),
             ),
-            obscureText: _isObscure,
-          ),
+            const SizedBox(height: 16),
+          ] else ...[
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: localizations.translate('labels.connection_name'),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _privateKeyController,
+              decoration: InputDecoration(
+                labelText: localizations.translate('labels.private_key'),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                          _isObscure ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () {
+                        setState(() {
+                          _isObscure = !_isObscure;
+                        });
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.casino),
+                      onPressed: _generatePrivateKey,
+                    ),
+                  ],
+                ),
+              ),
+              obscureText: _isObscure,
+            ),
+            const SizedBox(height: 16),
+          ],
+          _buildRecipientsSection(),
         ],
       ),
     );

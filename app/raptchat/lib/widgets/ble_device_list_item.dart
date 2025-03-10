@@ -7,6 +7,7 @@ class BleDeviceListItem extends StatelessWidget {
   final bool isConnecting;
   final bool isConnected;
   final bool isSaved;
+  final bool connectionError;
 
   const BleDeviceListItem({
     super.key,
@@ -15,14 +16,34 @@ class BleDeviceListItem extends StatelessWidget {
     this.isConnecting = false,
     this.isConnected = false,
     this.isSaved = false,
+    this.connectionError = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    Color? tileColor;
+    Widget? trailingIcon;
+
+    if (connectionError) {
+      tileColor = Colors.red.shade100;
+      trailingIcon = Icon(Icons.error, color: Colors.red);
+    } else if (isConnected) {
+      tileColor = theme.colorScheme.primaryContainer;
+      trailingIcon = Icon(Icons.check, color: theme.colorScheme.secondary);
+    } else if (isConnecting) {
+      trailingIcon = SizedBox(
+        width: 20,
+        height: 20,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: theme.colorScheme.secondary,
+        ),
+      );
+    }
 
     return ListTile(
-      tileColor: isConnected ? theme.colorScheme.primaryContainer : null,
+      tileColor: tileColor,
       leading: CircleAvatar(
         backgroundColor: theme.colorScheme.primary,
         child: isSaved
@@ -31,18 +52,7 @@ class BleDeviceListItem extends StatelessWidget {
       ),
       title: Text(device.displayName),
       subtitle: Text('MAC: ${device.macAddress}'),
-      trailing: isConnecting
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: theme.colorScheme.secondary,
-              ),
-            )
-          : isConnected
-              ? Icon(Icons.check, color: theme.colorScheme.secondary)
-              : null,
+      trailing: trailingIcon,
       onTap: onTap,
     );
   }

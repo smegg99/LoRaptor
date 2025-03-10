@@ -15,12 +15,18 @@ public:
 	Connection* getConnection(const std::string id);
 	std::vector<Connection*> getConnections();
 
+	// Clears all connections and their recipients, to prepare for a fresh start.
+	void clearConnections();
+
 	// Processes an incoming message and forwards it to the correct connection.
 	// Processing outgoing messages is done by the connection itself.
 	void processIncomingMessage(const std::string& message, const uint16_t senderNodeID);
 
 	// Processes outgoing messages in the buffer for all connections, optionally waiting for acknowledgment.
 	void processOutgoingMessages();
+
+	// Processes an outgoing message without the need to wait in buffer.
+	bool processOutgoingMessageNow(Message message, Connection* conn);
 private:
 	std::vector<Connection*> connections;
 };;

@@ -37,6 +37,14 @@ Connection* ConnectionManager::getConnection(const std::string id) {
 	return nullptr;
 }
 
+void ConnectionManager::clearConnections() {
+	DEBUG_PRINTLN("Clearing all connections...");
+	for (Connection* conn : connections) {
+		delete conn;
+	}
+	connections.clear();
+}
+
 void ConnectionManager::processIncomingMessage(const std::string& msg, const uint16_t senderNodeID) {
 	DEBUG_PRINTLN("Processing incoming message...");
 	DEBUG_PRINTLN(("Message size: " + std::to_string(msg.length()) + " bytes").c_str());
@@ -115,4 +123,24 @@ void ConnectionManager::processOutgoingMessages() {
 			xSemaphoreGive(conn->getOutgoingMutex());
 		}
 	}
+}
+
+bool ConnectionManager::processOutgoingMessageNow(Message message, Connection* conn) {
+	if (conn == nullptr) return false;
+	
+	extern MeshManager meshManager;
+	bool success = false;
+	
+	try {
+		meshManager.sendMessage(conn, message.encodedContent);
+		success = true;
+	} catch (const std::exception& e) {
+		DEBUG_PRINTLN(("Error sending message: " + std::string(e.what())).c_str());
+		success = false;
+	} catch (...) {
+		DEBUG_PRINTLN("Unknown error occurred while sending message");
+		success = false;
+	}
+	
+	return success;
 }

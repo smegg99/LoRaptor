@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// #define DEBUG_MODE
+#define DEBUG_MODE
 #ifdef DEBUG_MODE
 #include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -21,6 +21,7 @@
 #define COMMANDS_QUEUE_LENGTH 32
 #define MESSAGE_BUFFER_SIZE 64
 #define DISABLE_CONNECTION_LAYER_ACK
+#define DISABLE_OUTGOING_MESSAGES_BUFFER
 
 #define RETRY_INTERVAL 5000
 #define MAX_RETRIES 5
@@ -72,5 +73,6 @@
 #define MSG_CONN_DELETED "msg.conn.deleted"
 #define MSG_RECIPIENT_ADDED "msg.recipient.added"
 #define MSG_RECIPIENT_REMOVED "msg.recipient.removed"
+#define MSG_SEND_SUCCESS "msg.send.success"
 
 #endif

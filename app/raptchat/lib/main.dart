@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -7,7 +8,9 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:raptchat/models/ble_device.dart';
 import 'package:raptchat/models/connection_element.dart';
+import 'package:raptchat/models/connection_recipient.dart';
 import 'package:raptchat/models/settings_element.dart';
+import 'package:raptchat/screens/chat_screen.dart';
 import 'package:raptchat/theme/notifier.dart';
 import 'package:raptchat/localization/localization.dart';
 import 'package:raptchat/screens/main_screen.dart';
@@ -51,6 +54,7 @@ void main() async {
   Hive.registerAdapter(ConnectionElementAdapter());
   Hive.registerAdapter(SettingsElementAdapter());
   Hive.registerAdapter(BleDeviceAdapter());
+  Hive.registerAdapter(ConnectionRecipientAdapter());
   await Hive.openBox<ConnectionElement>('connection_elements');
   await Hive.openBox<BleDevice>('ble_devices');
   final settingsBox = await Hive.openBox<SettingsElement>('settings');
@@ -165,6 +169,10 @@ class _MyAppState extends State<MyApp> {
             ),
         '/settings': (context) => SettingsScreen(onLocaleChange: _setLocale),
         '/devices': (context) => const DevicesScreen(isActive: false),
+        '/chat': (context) => ChatScreen(
+              connection: ModalRoute.of(context)!.settings.arguments
+                  as ConnectionElement,
+            ),
       },
     );
   }

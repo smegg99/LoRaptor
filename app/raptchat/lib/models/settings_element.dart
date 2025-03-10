@@ -1,8 +1,9 @@
+// lib/models/settings_element.dart
 import 'package:hive/hive.dart';
 
 part 'settings_element.g.dart';
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 3)
 class SettingsElement extends HiveObject {
   @HiveField(0)
   String theme;

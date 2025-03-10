@@ -17,31 +17,34 @@ class ConnectionElementAdapter extends TypeAdapter<ConnectionElement> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return ConnectionElement(
-      name: fields[0] as String,
-      order: fields[1] as int,
-      privateKey: fields[2] as String,
-      recipientNodeIDs: (fields[5] as List).cast<int>(),
-      avatarPath: fields[3] as String?,
-      ownerNodeID: fields[4] as int,
+      connectionID: fields[0] as String,
+      name: fields[1] as String,
+      order: fields[2] as int,
+      privateKey: fields[3] as String,
+      avatarPath: fields[4] as String?,
+      ownerNodeID: fields[5] as int,
+      recipients: (fields[6] as List?)?.cast<ConnectionRecipient>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, ConnectionElement obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
-      ..write(obj.name)
+      ..write(obj.connectionID)
       ..writeByte(1)
-      ..write(obj.order)
+      ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.privateKey)
+      ..write(obj.order)
       ..writeByte(3)
-      ..write(obj.avatarPath)
+      ..write(obj.privateKey)
       ..writeByte(4)
-      ..write(obj.ownerNodeID)
+      ..write(obj.avatarPath)
       ..writeByte(5)
-      ..write(obj.recipientNodeIDs);
+      ..write(obj.ownerNodeID)
+      ..writeByte(6)
+      ..write(obj.recipients);
   }
 
   @override

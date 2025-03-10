@@ -62,7 +62,15 @@
 		"language": "Język",
 		"theme": "Motyw",
 		"version": "Wersja",
-		"source_code": "Kod Źródłowy"
+		"source_code": "Kod Źródłowy",
+		"save_name": "Zapisz Nazwę",
+		"forget_name": "Zapomnij Nazwę",
+		"disconnect": "Rozłącz",
+		"bluetooth_disabled": "Bluetooth jest wyłączone",
+		"custom_name": "Nazwa Własna",
+		"scanning": "Skanowanie...",
+		"no_devices": "Nie znaleziono urządzeń",
+		"no_device_paired": "Brak sparowanego urządzenia, najpierw sparuj urządzenie!"
 	},
 	"screens": {
 		"home": {
