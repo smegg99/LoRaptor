@@ -1,4 +1,3 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +5,7 @@ import 'package:raptchat/localization/localization.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/widgets/connection_list_item.dart';
 import 'package:raptchat/managers/ble_device_manager.dart';
+import 'package:raptchat/managers/messages_manager.dart';
 
 class HomeScreen extends StatefulWidget {
   final Function(ConnectionElement) onEdit;
@@ -43,7 +43,7 @@ class _ConnectionsPageState extends State<HomeScreen> {
           Hive.box<ConnectionElement>('connection_elements').listenable(),
       builder: (context, box, _) {
         final elements = box.values.toList().cast<ConnectionElement>();
-        // Connections with matching owner node appear on top.
+        // Sort connections with matching owner node appear on top.
         elements.sort((a, b) {
           bool aActive =
               currentNodeID != null && a.ownerNodeID == currentNodeID;
@@ -93,28 +93,33 @@ class _ConnectionsPageState extends State<HomeScreen> {
               }
             });
           },
-          children: List.generate(
-            elements.length,
-            (index) {
-              final element = elements[index];
-              final isSelected = widget.selectedIndices.contains(index);
-              // Determine if this connection belongs to the currently paired LoRaptor.
-              final isActive =
-                  currentNodeID != null && element.ownerNodeID == currentNodeID;
-              return ConnectionListItem(
-                key: ValueKey(element.key ?? element.name ?? index),
-                element: element,
-                isActive: isActive,
-                isSelected: isSelected,
-                isSelectionMode: widget.isSelectionMode,
-                onTap: () {
-                  Navigator.pushNamed(context, '/chat', arguments: element);
-                },
-                onLongPress: () => widget.onToggleSelectionMode(index),
-                onCheckboxChanged: (value) => widget.onToggleSelectItem(index),
-              );
-            },
-          ),
+          children: List.generate(elements.length, (index) {
+            final element = elements[index];
+            final isSelected = widget.selectedIndices.contains(index);
+            final isActive =
+                currentNodeID != null && element.ownerNodeID == currentNodeID;
+            // Wrap the connection list item inside a Consumer with a key.
+            return Consumer<MessagesManager>(
+              key: ValueKey(element.connectionID),
+              builder: (context, messagesManager, _) {
+                final lastMsg =
+                    messagesManager.getLastMessage(element.connectionID);
+                return ConnectionListItem(
+                  element: element,
+                  isActive: isActive,
+                  isSelected: isSelected,
+                  isSelectionMode: widget.isSelectionMode,
+                  onTap: () {
+                    Navigator.pushNamed(context, '/chat', arguments: element);
+                  },
+                  onLongPress: () => widget.onToggleSelectionMode(index),
+                  onCheckboxChanged: (value) =>
+                      widget.onToggleSelectItem(index),
+                  lastMessage: lastMsg,
+                );
+              },
+            );
+          }),
         );
       },
     );

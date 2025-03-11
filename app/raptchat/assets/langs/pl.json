@@ -1,90 +1,63 @@
 {
-	"buttons": {
-		"add_connection": "Dodaj Połączenie",
-		"settings": "Ustawienia",
-		"about": "O Programie",
-		"save": "Zapisz",
-		"add_action": "Dodaj Akcję",
-		"cancel": "Anuluj",
-		"delete": "Usuń",
-		"open": "Otwórz",
-		"export": "Eksportuj",
-		"proceed": "Kontynuuj",
-		"add_header": "Dodaj Nagłówek",
-		"pause": "Pauza",
-		"resume": "Wznów",
-		"capture_snapshot": "Zrób Zrzut Ekranu",
-		"run": "Uruchom",
-		"close": "Zamknij"
-	},
 	"labels": {
-		"delete_selected": "Usuń Wybrane Elementy",
+		"no_connections": "Brak połączeń!",
+		"delete_selected": "Usuń wybrane elementy",
 		"delete_selected_confirmation": "Czy na pewno chcesz usunąć {amount} elementów?",
+		"delete": "Usuń",
 		"selected": "Wybrano {amount}",
-		"no_connections": "Brak dostępnych połączeń",
-		"actions": "Akcje",
 		"connection_name": "Nazwa",
-		"unnamed_connection": "Połączenie Bez Nazwy",
-		"endpoint": "Punkt Końcowy",
-		"username": "Nazwa Użytkownika",
-		"password": "Hasło",
-		"please_fill_all_fields": "Proszę wypełnić wszystkie pola",
-		"please_fill_needed_fields": "Proszę wypełnić potrzebne pola",
-		"no_actions_available": "Brak dostępnych akcji",
-		"failed_to_load_file": "Nie udało się załadować pliku!",
+		"unnamed_connection": "Połączenie bez nazwy",
+		"private_key": "Klucz prywatny",
+		"public_key": "Klucz publiczny",
+		"fill_needed_fields": "Wypełnij wymagane pola",
+		"failed_to_load_file": "Nie udało się wczytać pliku!",
 		"failed_to_export_file": "Nie udało się wyeksportować pliku!",
-		"file_loaded": "Plik załadowany!",
-		"file_exported_to": "Plik wyeksportowany: {path}",
-		"export_current_data": "Eksportuj bieżące dane",
-		"load_data_from_file": "Załaduj dane z pliku",
-		"import_overwrite_confirmation": "Czy na pewno chcesz nadpisać bieżące dane?",
-		"export_secrets_confirmation": "Czy na pewno chcesz wyeksportować bieżące dane? Sekrety RÓWNIEŻ zostaną uwzględnione w pliku!",
-		"action_name": "Nazwa Akcji",
-		"unnamed_action": "Akcja Bez Nazwy",
-		"method": "Metoda",
-		"icon": "Ikona",
-		"headers": "Nagłówki",
-		"header_key": "Klucz",
-		"header_value": "Wartość",
-		"no_headers_available": "Brak dostępnych nagłówków",
-		"new_header": "Nowy Nagłówek {index}",
-		"body": "Treść",
-		"copy_basic_auth": "Skopiuj autoryzacje",
-		"retrying": "Ponawianie...",
-		"failed_to_load": "Nie udało się załadować strumienia!",
-		"connecting_to": "Łączenie z {name}...",
-		"connected_to": "Połączono z {name}",
-		"failed_to_capture_snapshot": "Nie udało się zrobić zrzutu ekranu!",
-		"failed_to_save_snapshot": "Nie udało się zapisać zrzutu ekranu!",
-		"captured_snapshot": "Zrobiono zrzut ekranu: {path}",
-		"action_executed_successfully": "Akcja {name} wykonana pomyślnie!",
+		"file_loaded": "Plik wczytany!",
+		"file_exported_to": "Plik wyeksportowany do: {path}",
+		"export_current_data": "Eksportuj aktualne dane",
+		"load_data_from_file": "Wczytaj dane z pliku",
+		"import_overwrite_confirmation": "Czy na pewno chcesz nadpisać aktualne dane?",
+		"export_secrets_confirmation": "Czy na pewno chcesz wyeksportować aktualne dane? Tajne dane również zostaną dołączone do pliku!",
 		"action_error": "Błąd: {error}",
 		"language": "Język",
 		"theme": "Motyw",
 		"version": "Wersja",
-		"source_code": "Kod Źródłowy",
-		"save_name": "Zapisz Nazwę",
-		"forget_name": "Zapomnij Nazwę",
+		"source_code": "Kod źródłowy",
+		"save_name": "Zapisz nazwę",
+		"forget_name": "Zapomnij nazwę",
 		"disconnect": "Rozłącz",
-		"bluetooth_disabled": "Bluetooth jest wyłączone",
-		"custom_name": "Nazwa Własna",
+		"bluetooth_disabled": "Bluetooth jest wyłączony",
+		"custom_name": "Niestandardowa nazwa",
 		"scanning": "Skanowanie...",
 		"no_devices": "Nie znaleziono urządzeń",
-		"no_device_paired": "Brak sparowanego urządzenia, najpierw sparuj urządzenie!"
+		"no_device_paired": "Brak sparowanych urządzeń, najpierw sparuj urządzenie!",
+		"adjust_avatar": "Dostosuj awatar",
+		"add_recipient": "Dodaj odbiorcę",
+		"node_id": "ID węzła",
+		"cancel": "Anuluj",
+		"can_not_add_own_device": "Nie możesz dodać własnego urządzenia!",
+		"recipient_already_added": "Odbiorca już dodany!",
+		"add": "Dodaj",
+		"recipients": "Odbiorcy",
+		"scan_qr_code": "Skanuj kod QR",
+		"connection_qr_code": "Kod QR połączenia",
+		"close": "Zamknij",
+		"connection_id": "ID połączenia",
+		"encryption_key": "Klucz szyfrowania",
+		"sending": "Wysyłanie...",
+		"message_hint": "Wpisz wiadomość...",
+		"messaging_disabled": "Wiadomości są wyłączone",
+		"messaging_disabled_not_paired": "Wiadomości są wyłączone, sparuj się z właściwym urządzeniem!"
 	},
 	"screens": {
 		"home": {
-			"title": "RaptChat"
+			"title": "Główna"
 		},
-		"connection_edit": {
-			"title": "Edytuj Połączenie",
-			"title_alt": "Dodaj Połączenie"
+		"devices": {
+			"title": "Urządzenia"
 		},
-		"action_edit": {
-			"title": "Edytuj Akcję"
-		},
-		"connection": {
-			"title": "Połączenie"
+		"mesh": {
+			"title": "Sieć"
 		},
 		"settings": {
 			"title": "Ustawienia",
@@ -104,7 +77,19 @@
 			}
 		},
 		"about": {
-			"title": "O Programie"
+			"title": "O aplikacji"
+		},
+		"connection_edit": {
+			"title": "Edytuj połączenie"
 		}
+	},
+	"languages": {
+		"en": "Angielski",
+		"pl": "Polski"
+	},
+	"themes": {
+		"light": "Jasny",
+		"dark": "Ciemny",
+		"system": "Systemowy"
 	}
 }

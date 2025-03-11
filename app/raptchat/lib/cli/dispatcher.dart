@@ -101,67 +101,87 @@ class Dispatcher {
     print("Tokens: $tokens");
     if (tokens.isEmpty) return false;
 
-    // Use _matchCommand with _MatchResult to update the token index.
+
     _MatchResult? matchResult = _matchCommand(tokens, 0);
     if (matchResult == null) {
       reportError("Unknown command: ${tokens[0]}");
       return false;
     }
+    print("Matched command: ${matchResult.command.name}");
     Command cmd = matchResult.command;
     int index = matchResult.nextIndex;
 
+    // Parse arguments using the common parser.
     List<Argument> parsedArgs = [];
     if (!_parseArguments(tokens, index, parsedArgs)) {
       return false;
     }
+
+    print("Parsed arguments:");
+    for (var arg in parsedArgs) {
+      print("  ${arg.name}: ${arg.values}");
+    }
+
     // Check for help flag.
-    bool foundHelp =
-        parsedArgs.any((arg) => arg.name == "h" || arg.name == "help");
+    bool foundHelp = parsedArgs.any((arg) =>
+        arg.name == "h" ||
+        arg.name == "help" ||
+        arg.values.any((v) =>
+            v.type == ValueType.stringType &&
+            (v.stringValue == "h" || v.stringValue == "help")));
     if (foundHelp) {
       cmd.printUsage(prefix: "", output: output);
       return true;
     }
-    // Merge parsed arguments with expected argument specifications.
+
+    // For non-variadic commands, merge parsed arguments with expected argSpecs.
     List<Argument> mergedArgs = [];
-    for (var spec in cmd.argSpecs) {
-      Argument? foundArg;
-      try {
-        foundArg = parsedArgs.firstWhere((a) => a.name == spec.name);
-      } catch (e) {
-        foundArg = null;
-      }
-      if (foundArg == null) {
-        if (spec.required && !spec.hasDefault) {
-          reportError("Required argument missing: ${spec.name}");
-          return false;
+    if (!cmd.variadic) {
+      for (var spec in cmd.argSpecs) {
+        Argument? foundArg;
+        try {
+          foundArg = parsedArgs.firstWhere((a) => a.name == spec.name);
+        } catch (e) {
+          foundArg = null;
         }
-        if (spec.hasDefault && spec.defaultValue != null) {
-          Argument defaultArg = Argument(spec.name);
-          defaultArg.values.add(spec.defaultValue!);
-          mergedArgs.add(defaultArg);
-        }
-      } else {
-        if (foundArg.values.isEmpty) {
-          reportError("Argument ${spec.name} has no value.");
-          return false;
-        }
-        Value provided = foundArg.values[0];
-        if (spec.type == ValueType.doubleType) {
-          if (provided.type == ValueType.intType && provided.intValue != null) {
-            provided =
-                Value.doubleValueConstructor(provided.intValue!.toDouble());
-          } else if (provided.type != ValueType.doubleType) {
+        if (foundArg == null) {
+          if (spec.required && !spec.hasDefault) {
+            reportError("Required argument missing: ${spec.name}");
+            return false;
+          }
+          if (spec.hasDefault && spec.defaultValue != null) {
+            Argument defaultArg = Argument(spec.name);
+            defaultArg.values.add(spec.defaultValue!);
+            mergedArgs.add(defaultArg);
+          }
+        } else {
+          if (foundArg.values.isEmpty) {
+            reportError("Argument ${spec.name} has no value.");
+            return false;
+          }
+          Value provided = foundArg.values[0];
+          if (spec.type == ValueType.doubleType) {
+            if (provided.type == ValueType.intType &&
+                provided.intValue != null) {
+              provided =
+                  Value.doubleValueConstructor(provided.intValue!.toDouble());
+            } else if (provided.type != ValueType.doubleType) {
+              reportError("Type mismatch for argument: ${spec.name}");
+              return false;
+            }
+          } else if (provided.type != spec.type) {
             reportError("Type mismatch for argument: ${spec.name}");
             return false;
           }
-        } else if (provided.type != spec.type) {
-          reportError("Type mismatch for argument: ${spec.name}");
-          return false;
+          mergedArgs.add(foundArg);
         }
-        mergedArgs.add(foundArg);
       }
+    } else {
+      // For variadic commands, keep the parsed arguments as they are.
+      mergedArgs = parsedArgs;
     }
-    // Prepare a command for execution.
+
+    // Prepare and execute the command.
     Command execCmd = Command(
         name: cmd.name, description: cmd.description, callback: cmd.callback);
     execCmd.arguments = mergedArgs;
@@ -179,46 +199,58 @@ class Dispatcher {
 
   List<String> _tokenize(String input) {
     List<String> tokens = [];
-    StringBuffer token = StringBuffer();
-    _TokenizerState state = _TokenizerState.outside;
-    for (int i = 0; i < input.length; i++) {
-      String c = input[i];
-      switch (state) {
-        case _TokenizerState.outside:
-          if (c.trim().isEmpty) {
-            if (token.isNotEmpty) {
-              tokens.add(token.toString().trim());
-              token.clear();
+    int i = 0;
+    while (i < input.length) {
+      // Skip any leading whitespace.
+      while (i < input.length && input[i].trim().isEmpty) {
+        i++;
+      }
+      if (i >= input.length) break;
+      // If token starts with a quote, read until the closing quote.
+      if (input[i] == '"') {
+        int start = i + 1;
+        i++; // skip opening quote
+        StringBuffer sb = StringBuffer();
+        while (i < input.length && input[i] != '"') {
+          if (input[i] == '\\' && i + 1 < input.length) {
+            // Handle escaped characters.
+            sb.write(input[i + 1]);
+            i += 2;
+          } else {
+            sb.write(input[i]);
+            i++;
+          }
+        }
+        i++; // skip closing quote
+        tokens.add(sb.toString().trim());
+      }
+      // If token starts with a bracket, consume until the matching bracket.
+      else if (input[i] == '[') {
+        int start = i;
+        int bracketCount = 0;
+        while (i < input.length) {
+          if (input[i] == '[') {
+            bracketCount++;
+          } else if (input[i] == ']') {
+            bracketCount--;
+            if (bracketCount == 0) {
+              i++; // include the closing bracket
+              break;
             }
-          } else if (c == '"') {
-            state = _TokenizerState.inQuote;
-          } else if (c == '[') {
-            state = _TokenizerState.inList;
-            token.write(c);
-          } else {
-            token.write(c);
           }
-          break;
-        case _TokenizerState.inQuote:
-          if (c == '\\') {
-            state = _TokenizerState.inEscape;
-          } else if (c == '"') {
-            state = _TokenizerState.outside;
-          } else {
-            token.write(c);
-          }
-          break;
-        case _TokenizerState.inEscape:
-          token.write(c);
-          state = _TokenizerState.inQuote;
-          break;
-        case _TokenizerState.inList:
-          token.write(c);
-          if (c == ']') state = _TokenizerState.outside;
-          break;
+          i++;
+        }
+        tokens.add(input.substring(start, i).trim());
+      }
+      // Otherwise, read until the next whitespace.
+      else {
+        int start = i;
+        while (i < input.length && input[i].trim().isNotEmpty) {
+          i++;
+        }
+        tokens.add(input.substring(start, i).trim());
       }
     }
-    if (token.isNotEmpty) tokens.add(token.toString().trim());
     return tokens;
   }
 
@@ -251,7 +283,12 @@ class Dispatcher {
     final seenArgs = <String>{};
     while (index < tokens.length) {
       String token = tokens[index];
-      if (token.isEmpty || !token.startsWith('-')) {
+      // Skip empty tokens rather than erroring out.
+      if (token.isEmpty) {
+        index++;
+        continue;
+      }
+      if (!token.startsWith('-')) {
         reportError("Unexpected token: $token");
         return false;
       }
@@ -265,6 +302,11 @@ class Dispatcher {
       index++;
       while (index < tokens.length && !tokens[index].startsWith('-')) {
         String valueToken = tokens[index];
+        // Skip if valueToken is empty.
+        if (valueToken.isEmpty) {
+          index++;
+          continue;
+        }
         if (valueToken.startsWith('[') && valueToken.endsWith(']')) {
           arg.values.add(_parseList(valueToken));
         } else {
@@ -300,16 +342,100 @@ class Dispatcher {
     return Value.stringValueConstructor(token);
   }
 
-  Value _parseList(String token) {
-    String inner = token.substring(1, token.length - 1);
-    List<String> items = inner.split(',').map((s) => s.trim()).toList();
-    List<Value> listValues = [];
-    for (var item in items) {
-      if (item.isNotEmpty) {
-        listValues.add(_parseValue(item));
+  List<String> _splitTopLevelList(String input) {
+    List<String> parts = [];
+    int bracketLevel = 0;
+    StringBuffer current = StringBuffer();
+    for (int i = 0; i < input.length; i++) {
+      String c = input[i];
+      if (c == '[') {
+        bracketLevel++;
+        current.write(c);
+      } else if (c == ']') {
+        bracketLevel--;
+        current.write(c);
+      } else if (c == ',' && bracketLevel == 0) {
+        // At top level, a comma indicates a split.
+        String token = current.toString().trim();
+        // Only add non-empty tokens.
+        if (token.isNotEmpty) {
+          parts.add(token);
+        }
+        current.clear();
+      } else {
+        current.write(c);
       }
     }
-    return Value.listValueConstructor(listValues);
+    // Add the final token if present.
+    if (current.isNotEmpty) {
+      String token = current.toString().trim();
+      if (token.isNotEmpty) {
+        parts.add(token);
+      }
+    }
+    return parts;
+  }
+
+  List<Value> _parseListItems(String input) {
+    List<Value> values = [];
+    int index = 0;
+    while (index < input.length) {
+      // Skip commas and whitespace.
+      while (index < input.length &&
+          (input[index] == ',' || input[index].trim().isEmpty)) {
+        index++;
+      }
+      if (index >= input.length) break;
+      if (input[index] == '[') {
+        // Found a nested list; locate its matching closing bracket.
+        int start = index;
+        int bracketCount = 0;
+        while (index < input.length) {
+          if (input[index] == '[') {
+            bracketCount++;
+          } else if (input[index] == ']') {
+            bracketCount--;
+          }
+          index++;
+          if (bracketCount == 0) break;
+        }
+        String nestedStr = input.substring(start, index);
+        values.add(_parseList(nestedStr));
+      } else {
+        // Parse a non-list token (until the next comma or closing bracket).
+        int start = index;
+        while (index < input.length &&
+            input[index] != ',' &&
+            input[index] != ']') {
+          index++;
+        }
+        String token = input.substring(start, index).trim();
+        if (token.isNotEmpty) {
+          values.add(_parseValue(token));
+        }
+      }
+    }
+    return values;
+  }
+
+  Value _parseList(String token) {
+    // Assume token starts with '[' and ends with ']'
+    // Remove the outer brackets.
+    String inner = token.substring(1, token.length - 1).trim();
+    // Use our helper to split only on top-level commas.
+    List<String> parts = _splitTopLevelList(inner);
+    List<Value> values = [];
+    for (var part in parts) {
+      if (part.isEmpty) continue;
+      // If a part is itself a list (starts with '[' and ends with ']'),
+      // parse it recursively.
+      if (part.startsWith('[') && part.endsWith(']')) {
+        values.add(_parseList(part));
+      } else {
+        values.add(_parseValue(part));
+      }
+    }
+    return Value.listValueConstructor(values);
   }
 
   void printGlobalHelp() {

@@ -1,26 +1,9 @@
 {
-	"buttons": {
-		"add_connection": "Add Connection",
-		"settings": "Settings",
-		"about": "About",
-		"save": "Save",
-		"add_action": "Add Action",
-		"cancel": "Cancel",
-		"delete": "Delete",
-		"open": "Open",
-		"export": "Export",
-		"proceed": "Proceed",
-		"add_header": "Add Header",
-		"pause": "Pause",
-		"resume": "Resume",
-		"capture_snapshot": "Capture Snapshot",
-		"run": "Run",
-		"close": "Close"
-	},
 	"labels": {
 		"no_connections": "No connections!",
 		"delete_selected": "Delete Selected Items",
 		"delete_selected_confirmation": "Are you sure you want to delete {amount} items?",
+		"delete": "Delete",
 		"selected": "{amount} Selected",
 		"connection_name": "Name",
 		"unnamed_connection": "Unnamed Connection",
@@ -47,7 +30,24 @@
 		"custom_name": "Custom Name",
 		"scanning": "Scanning...",
 		"no_devices": "No devices found",
-		"no_device_paired": "No device paired, pair a device first!"
+		"no_device_paired": "No device paired, pair a device first!",
+		"adjust_avatar": "Adjust Avatar",
+		"add_recipient": "Add Recipient",
+		"node_id": "Node ID",
+		"cancel": "Cancel",
+		"can_not_add_own_device": "You can't add your own device!",
+		"recipient_already_added": "Recipient already added!",
+		"add": "Add",
+		"recipients": "Recipients",
+		"scan_qr_code": "Scan QR Code",
+		"connection_qr_code": "Connection QR Code",
+		"close": "Close",
+		"connection_id": "Connection ID",
+		"encryption_key": "Encryption Key",
+		"sending": "Sending...",
+		"message_hint": "Type a message...",
+		"messaging_disabled": "Messaging is disabled",
+		"messaging_disabled_not_paired": "Messaging is disabled, pair with the owning device!"
 	},
 	"screens": {
 		"home": {
@@ -82,5 +82,14 @@
 		"connection_edit": {
 			"title": "Edit Connection"
 		}
+	},
+	"languages": {
+		"en": "English",
+		"pl": "Polish"
+	},
+	"themes": {
+		"light": "Light",
+		"dark": "Dark",
+		"system": "System"
 	}
 }

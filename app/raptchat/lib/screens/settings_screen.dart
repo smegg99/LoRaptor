@@ -87,8 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(localizations
-                          .translate('screens.settings.labels.language')),
+                      Text(localizations.translate('labels.language')),
                       DropdownMenu<String>(
                         initialSelection: _language,
                         label: Text(''),
@@ -96,8 +95,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           final key = lang == 'English' ? 'en' : 'pl';
                           return DropdownMenuEntry(
                             value: lang,
-                            label: localizations.translate(
-                                'screens.settings.options.languages.$key'),
+                            label: localizations.translate('languages.$key'),
                           );
                         }).toList(),
                         onSelected: (value) {
@@ -118,18 +116,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(localizations
-                          .translate('screens.settings.labels.theme')),
+                      Text(localizations.translate('labels.theme')),
                       DropdownMenu<String>(
+                        // Use a key based on the current locale so that the widget rebuilds when the locale changes.
+                        key: ValueKey(
+                            Localizations.localeOf(context).languageCode),
                         initialSelection: _theme,
-                        label: Text(''),
+                        label: const Text(''),
                         dropdownMenuEntries:
                             ['Light', 'Dark', 'System'].map((theme) {
-                          final key = theme.toLowerCase();
+                          final keyTheme = theme.toLowerCase();
                           return DropdownMenuEntry(
                             value: theme,
-                            label: localizations.translate(
-                                'screens.settings.options.themes.$key'),
+                            label: localizations.translate('themes.$keyTheme'),
                           );
                         }).toList(),
                         onSelected: (value) {
@@ -137,14 +136,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             setState(() {
                               _theme = value;
                               _saveChanges(_theme, _language);
-
-                              themeNotifier.switchThemeMode(value);
+                              Provider.of<ThemeNotifier>(context, listen: false)
+                                  .switchThemeMode(value);
                             });
                           }
                         },
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
             ),

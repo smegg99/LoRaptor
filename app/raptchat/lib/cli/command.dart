@@ -69,7 +69,11 @@ class Command {
       cmdLine += " (aliases: ${aliases.join(", ")})";
     }
     out.println("$cmdLine - $description");
-    if (argSpecs.isNotEmpty) {
+
+    if (variadic) {
+      out.println(
+          "$prefix  Arguments: accepts any number of positional arguments.");
+    } else if (argSpecs.isNotEmpty) {
       out.println("$prefix  Arguments:");
       for (var spec in argSpecs) {
         String typeStr;

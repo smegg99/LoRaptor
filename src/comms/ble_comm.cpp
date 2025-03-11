@@ -39,7 +39,8 @@ void BLEComm::init() {
 	BLEService* pService = pServer->createService(NUS_SERVICE_UUID);
 	BLECharacteristic* pRxCharacteristic = pService->createCharacteristic(
 		NUS_RX_CHARACTERISTIC_UUID,
-		BLECharacteristic::PROPERTY_WRITE
+		//BLECharacteristic::PROPERTY_WRITE
+		BLECharacteristic::PROPERTY_WRITE_NR
 	);
 	pRxCharacteristic->setCallbacks(new NUSCallbacks(this));
 

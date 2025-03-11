@@ -7,6 +7,12 @@ import 'package:raptchat/models/ble_device.dart';
 import 'package:hive/hive.dart';
 import 'package:raptchat/cli/raptor_cli.dart';
 import 'package:raptchat/models/connection_element.dart';
+import 'package:collection/collection.dart'; // for firstWhereOrNull
+
+typedef NewMessageCallback = void Function(
+    int senderNodeID, int epochSeconds, String message);
+typedef GenericReturnCallback = void Function(String value);
+typedef FlushReceivedCallback = void Function(List<List<dynamic>> flushData);
 
 class BleDeviceManager extends ChangeNotifier {
   BleDevice? _connectedDevice;
@@ -33,10 +39,7 @@ class BleDeviceManager extends ChangeNotifier {
   // Flag to ensure startup commands run only once per connection.
   bool _startupExecuted = false;
 
-  // Heartbeat fields, not used for now.
   Timer? _heartbeatTimer;
-  // final Duration _heartbeatInterval = Duration(seconds: 10);
-  // final Duration _heartbeatTimeout = Duration(seconds: 7);
 
   Dispatcher? _cliDispatcher;
   BluetoothCharacteristic? _nusRxChar;
@@ -45,12 +48,23 @@ class BleDeviceManager extends ChangeNotifier {
       StreamController<String>.broadcast();
   Stream<String> get nusDataStream => _nusDataController.stream;
 
+  StreamSubscription<List<int>>? _txSubscription;
+
+  NewMessageCallback? onNewMessageReceived;
+  GenericReturnCallback? onGenericReturn;
+  FlushReceivedCallback? onFlushReceived;
+
+  void registerNewMessageCallback(NewMessageCallback callback) {
+    onNewMessageReceived = callback;
+  }
+
   bool get isScanning => _isScanning;
   bool get bluetoothEnabled => _bluetoothEnabled;
   BleDevice? get connectedDevice => _connectedDevice;
   List<BleDevice> get availableDevices => _availableDevices;
   String? get connectingDeviceMac => _connectingDeviceMac;
 
+  // --- Device discovery ---
   void addAvailableDevice(BleDevice device) {
     final index =
         _availableDevices.indexWhere((d) => d.macAddress == device.macAddress);
@@ -67,13 +81,14 @@ class BleDeviceManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  // --- Connection management ---
   Future<void> connectToDevice(BleDevice device) async {
     if (_connectedDevice != null &&
         _connectedDevice!.macAddress != device.macAddress) {
       await disconnectDevice();
     }
     _manualDisconnect = false;
-    _startupExecuted = false; // Reset startup flag for new connection.
+    _startupExecuted = false; // Reset for new connection.
     _connectingDeviceMac = device.macAddress;
     notifyListeners();
 
@@ -91,7 +106,7 @@ class BleDeviceManager extends ChangeNotifier {
         await executeDeviceSetupCommands({});
         _startupExecuted = true;
       }
-      // _startHeartbeat();
+      // Optionally start heartbeat here.
     } catch (e) {
       print("Connection failed: $e");
     } finally {
@@ -106,6 +121,9 @@ class BleDeviceManager extends ChangeNotifier {
       if (bluetoothDevice != null) {
         try {
           _manualDisconnect = true;
+          // Cancel TX subscription on disconnect.
+          _txSubscription?.cancel();
+          _txSubscription = null;
           final currentState = await bluetoothDevice.connectionState.first;
           if (currentState == BluetoothConnectionState.connected) {
             await bluetoothDevice.disconnect();
@@ -134,7 +152,7 @@ class BleDeviceManager extends ChangeNotifier {
         bluetoothConnectStatus.isGranted;
   }
 
-  // TODO: Change the timeout to a more reasonable value.
+  // --- Scanning ---
   void startScan({Duration timeout = const Duration(seconds: 1)}) async {
     if (_isScanning) return;
     if (!await _checkPermissions()) {
@@ -247,21 +265,19 @@ class BleDeviceManager extends ChangeNotifier {
         rxChar = char;
       }
     }
-
     if (txChar == null || rxChar == null) {
       print("NUS characteristics not found");
       return;
     }
     _nusRxChar = rxChar;
-
-    // Always write with response.
+    // Set notify on TX characteristic.
     await txChar.setNotifyValue(true);
-    txChar.lastValueStream.listen((data) {
+
+    // Cancel previous subscription if exists.
+    _txSubscription?.cancel();
+    _txSubscription = txChar.lastValueStream.listen((data) {
       String received = String.fromCharCodes(data);
-      print("Raw NUS data received: '$received'");
-      print("Code units: $data");
       String cleaned = received.trim();
-      print("Cleaned data: '$cleaned'");
       if (cleaned.isEmpty) return;
       _cliDispatcher?.dispatch(cleaned);
       _nusDataController.add(cleaned);
@@ -283,7 +299,6 @@ class BleDeviceManager extends ChangeNotifier {
         notifyListeners();
       }
     });
-
     _cliDispatcher = Dispatcher();
     _cliDispatcher!.registerOutput(_NUSCLIOutput(rxChar));
     _cliDispatcher!.registerCommand(Command(
@@ -295,43 +310,72 @@ class BleDeviceManager extends ChangeNotifier {
       },
     ));
 
-    // Register an error command that ignores "error.conn.exists" so as not to trigger multiple startups.
-    _cliDispatcher!.registerCommand(Command(
-      name: "error",
-      description: "Error command from device",
-      callback: (cmd) {
-        if (cmd.arguments.any((arg) => arg.name == "m")) {
-          final argM = cmd.arguments.firstWhere((arg) => arg.name == "m");
-          String errorMsg = argM.values.first.toString();
-          if (errorMsg.contains("error.conn.exists")) {
-            print("Ignoring error.conn.exists: connection already exists.");
-            _startupExecuted = true;
-          } else {
-            print("NUS error: $errorMsg");
-          }
-        }
-      },
-    ));
-
     final returnCommand = Command(
       name: "return",
       description: "Return command from device",
       callback: (cmd) {
-        final argV = cmd.arguments.firstWhere((arg) => arg.name == "v");
-        final valueStr = argV.values.first.toString().replaceAll('"', '');
-        final nodeId = int.tryParse(valueStr);
-        if (nodeId != null) {
-          print("NUS: Received node ID: $nodeId");
-        } else {
-          print("NUS: Received message: $valueStr");
+        final argT = cmd.arguments.firstWhereOrNull((arg) => arg.name == "t");
+        if (argT != null &&
+            argT.values.isNotEmpty &&
+            argT.values[0].type == ValueType.stringType) {
+          final typeVal = argT.values[0].stringValue;
+          if (typeVal == "type.generic") {
+            // Generic returns (e.g., for send commands)
+            final argV =
+                cmd.arguments.firstWhereOrNull((arg) => arg.name == "v");
+            if (argV != null && argV.values.isNotEmpty) {
+              final val = argV.values[0].stringValue ?? "";
+              print("Generic return from device: $val");
+              if (onGenericReturn != null) {
+                onGenericReturn!(val);
+              }
+            }
+            return;
+          } else if (typeVal == "type.flush.mess") {
+            // This is a flush response.
+            final argV =
+                cmd.arguments.firstWhereOrNull((arg) => arg.name == "v");
+            if (argV != null && argV.values.isNotEmpty) {
+              // We expect v to be a list of lists.
+              final flushOuter = argV.values[0].listValue ?? [];
+              List<List<dynamic>> flushData = [];
+              for (var item in flushOuter) {
+                if (item.type == ValueType.listType) {
+                  flushData.add(item.listValue ?? []);
+                }
+              }
+              print("Flush response data: $flushData");
+              // Process each sub-list in the flush data
+              for (var subList in flushData) {
+                // Validate the structure of each sublist
+                if (subList.length < 3) {
+                  print("Skipping invalid flush data item: $subList (insufficient elements)");
+                  continue;
+                }
+                
+                try {
+                  int senderNodeID = subList[0] is int ? subList[0] : int.parse(subList[0].toString());
+                  int timestamp = subList[1] is int ? subList[1] : int.parse(subList[1].toString());
+                  String message = subList[2].toString();
+                  
+                  print("Flush data item: $senderNodeID - $timestamp - $message");
+                } catch (e) {
+                  print("Error processing flush data item: $subList - $e");
+                }
+              }
+              if (onFlushReceived != null) {
+                onFlushReceived!(flushData);
+              }
+            }
+            return;
+          }
         }
+        // Fallback: print error or ignore.
+        print("Return command did not match known types.");
       },
     );
-
-    returnCommand.addArgSpec(ArgSpec("v", ValueType.stringType,
-        required: true, helpText: "Value from device"));
-
-    _cliDispatcher!.registerCommand(returnCommand);
+    returnCommand.setVariadic(true);
+    _cliDispatcher!.registerCommand(returnCommand); // Register once.
     _cliDispatcher?.registerErrorCallback((error) {
       print("Error: $error");
     });
@@ -340,20 +384,18 @@ class BleDeviceManager extends ChangeNotifier {
   Future<void> _attemptReconnect(
       BluetoothDevice bluetoothDevice, BleDevice device) async {
     print("Attempting to reconnect to ${device.displayName}...");
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 5));
     try {
       await bluetoothDevice.connect(autoConnect: false);
       _connectedDevice = device;
       _lastConnectedDeviceMac = device.macAddress;
       _connectionErrors[device.macAddress] = false;
-      _startupExecuted =
-          false; // Reset startup flag so that startup commands run on reconnection.
+      _startupExecuted = false; // Reset startup flag for reconnection.
       await _establishNUSCommunication(device, bluetoothDevice);
       if (!_startupExecuted) {
         await executeDeviceSetupCommands({});
         _startupExecuted = true;
       }
-      // _startHeartbeat();
       notifyListeners();
       print("Reconnection successful for ${device.displayName}");
     } catch (e) {
@@ -362,34 +404,6 @@ class BleDeviceManager extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  /// Starts a heartbeat timer to periodically ping the device.
-  // void _startHeartbeat() {
-  //   _heartbeatTimer?.cancel();
-  //   _heartbeatTimer = Timer.periodic(_heartbeatInterval, (_) async {
-  //     if (_connectedDevice != null) {
-  //       try {
-  //         await sendNUSCommand("ping");
-  //         final response = await nusDataStream
-  //             .firstWhere((data) => data.trim() == 'return -v "pong"')
-  //             .timeout(_heartbeatTimeout);
-  //         print("Heartbeat received: $response");
-  //       } catch (e) {
-  //         print("Heartbeat timeout or error: $e");
-  //         if (_connectedDevice != null) {
-  //           _connectionErrors[_connectedDevice!.macAddress] = true;
-  //           if (!_manualDisconnect) {
-  //             final device = _connectedDevice!;
-  //             final bluetoothDevice = _deviceMap[device.macAddress];
-  //             if (bluetoothDevice != null) {
-  //               await _attemptReconnect(bluetoothDevice, device);
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   });
-  // }
 
   void _stopHeartbeat() {
     _heartbeatTimer?.cancel();
@@ -403,17 +417,16 @@ class BleDeviceManager extends ChangeNotifier {
     }
     List<int> bytes = command.codeUnits;
     try {
-      await _nusRxChar!.write(bytes, withoutResponse: false);
+      await _nusRxChar!.write(bytes, withoutResponse: true);
       print("Sent over NUS (with response): $command");
     } catch (e) {
       print("Error sending command: $e");
     }
   }
 
-  // Executes startup commands only once per connection:
-  // 1. Sets the RTC using the current epoch (in seconds).
-  // 2. For each saved connection (owned by the current device), sends a create connection command.
-  // TODO: 3. Make so it periodically updates saved location. 
+  /// Executes startup commands only once per connection:
+  /// 1. Sets the RTC using the current epoch (in seconds).
+  /// 2. For each saved connection (owned by the current device), sends a create connection command.
   Future<void> executeDeviceSetupCommands(Map<String, dynamic> settings) async {
     if (_nusRxChar == null) {
       print(
@@ -430,11 +443,12 @@ class BleDeviceManager extends ChangeNotifier {
     await Future.delayed(Duration(milliseconds: 200));
     final currentNodeID = _connectedDevice?.nodeId;
     if (currentNodeID != null) {
-      final box = await Hive.openBox<ConnectionElement>('connection_elements');
+      final box = Hive.box<ConnectionElement>('connection_elements');
       final connections =
           box.values.where((c) => c.ownerNodeID == currentNodeID);
       for (var connection in connections) {
-        String recipientsList = connection.recipients.map((r) => r.nodeId.toString()).join(", ");
+        String recipientsList =
+            connection.recipients.map((r) => r.nodeId.toString()).join(", ");
         final cmd =
             'create connection -id "${connection.connectionID}" -k "${connection.privateKey}" -r [$recipientsList]';
         await sendNUSCommand(cmd);
@@ -462,7 +476,7 @@ class _NUSCLIOutput implements CLIOutput {
   _NUSCLIOutput(this.rxChar);
   @override
   void print(String s) {
-    rxChar.write(s.codeUnits, withoutResponse: true);
+    //rxChar.write(s.codeUnits, withoutResponse: false);
   }
 
   @override

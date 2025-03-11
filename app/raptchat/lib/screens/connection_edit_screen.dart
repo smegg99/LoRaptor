@@ -238,7 +238,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         compressQuality: 100,
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Adjust Avatar',
+            toolbarTitle: localizations.translate('labels.adjust_avatar'),
             cropStyle: CropStyle.circle,
             toolbarColor: Theme.of(context).primaryColor,
             toolbarWidgetColor: Colors.white,
@@ -247,7 +247,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
             hideBottomControls: true,
           ),
           IOSUiSettings(
-            title: 'Adjust Avatar',
+            title: localizations.translate('labels.adjust_avatar'),
             cropStyle: CropStyle.circle,
             aspectRatioLockEnabled: true,
             resetAspectRatioEnabled: false,
@@ -284,7 +284,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         compressQuality: 100,
         uiSettings: [
           AndroidUiSettings(
-            toolbarTitle: 'Adjust Recipient Avatar',
+            toolbarTitle: localizations.translate('labels.adjust_avatar'),
             cropStyle: CropStyle.circle,
             toolbarColor: Theme.of(context).primaryColor,
             toolbarWidgetColor: Colors.white,
@@ -293,7 +293,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
             hideBottomControls: true,
           ),
           IOSUiSettings(
-            title: 'Adjust Recipient Avatar',
+            title: localizations.translate('labels.adjust_avatar'),
             cropStyle: CropStyle.circle,
             aspectRatioLockEnabled: true,
             resetAspectRatioEnabled: false,
@@ -327,17 +327,19 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         final TextEditingController nameController = TextEditingController();
         final TextEditingController nodeIdController = TextEditingController();
         return AlertDialog(
-          title: Text("Add Recipient"),
+          title: Text(localizations.translate('labels.add_recipient')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: nameController,
-                decoration: InputDecoration(labelText: "Custom Name"),
+                decoration: InputDecoration(
+                    labelText: localizations.translate('labels.custom_name')),
               ),
               TextField(
                 controller: nodeIdController,
-                decoration: InputDecoration(labelText: "Node ID"),
+                decoration: InputDecoration(
+                    labelText: localizations.translate('labels.node_id')),
                 keyboardType: TextInputType.number,
               ),
             ],
@@ -345,7 +347,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
+              child: Text(localizations.translate('labels.cancel')),
             ),
             ElevatedButton(
               onPressed: () {
@@ -357,7 +359,8 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
                 if (nodeId == currentNodeID) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text("Cannot add current device as recipient."),
+                      content: Text(localizations
+                          .translate('labels.can_not_add_own_device')),
                     ),
                   );
                   return;
@@ -366,8 +369,8 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
                 if (_recipients.any((r) => r.nodeId == nodeId)) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content:
-                          Text("A recipient with this Node ID already exists."),
+                      content: Text(localizations
+                          .translate('labels.recipient_already_added')),
                     ),
                   );
                   return;
@@ -381,7 +384,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
                   ),
                 );
               },
-              child: Text("Add"),
+              child: Text(localizations.translate('labels.add')),
             ),
           ],
         );
@@ -427,45 +430,34 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Recipients", style: Theme.of(context).textTheme.titleMedium),
+        Text(localizations.translate('labels.recipients'),
+            style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         ...List.generate(_recipients.length, (index) {
           final r = _recipients[index];
           return ListTile(
-            leading: allowModification
-                ? GestureDetector(
-                    onTap: () => _pickRecipientAvatar(index),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: r.avatarPath != null
-                          ? FileImage(File(r.avatarPath!))
-                          : null,
-                      child: r.avatarPath == null
-                          ? Text(
-                              r.customName.isNotEmpty
-                                  ? r.customName[0].toUpperCase()
-                                  : '',
-                            )
-                          : null,
-                    ),
-                  )
-                : CircleAvatar(
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage: r.avatarPath != null
-                        ? FileImage(File(r.avatarPath!))
-                        : null,
-                    child: r.avatarPath == null
-                        ? Text(
-                            r.customName.isNotEmpty
-                                ? r.customName[0].toUpperCase()
-                                : '',
-                          )
-                        : null,
-                  ),
+            leading: GestureDetector(
+              onTap: () => _pickRecipientAvatar(index),
+              child: CircleAvatar(
+                backgroundColor: Colors.grey.shade300,
+                backgroundImage: r.avatarPath != null
+                    ? FileImage(File(r.avatarPath!))
+                    : null,
+                child: r.avatarPath == null
+                    ? Text(
+                        r.customName.isNotEmpty
+                            ? r.customName[0].toUpperCase()
+                            : '',
+                      )
+                    : null,
+              ),
+            ),
             title: Text(r.customName,
                 overflow: TextOverflow.ellipsis, maxLines: 1),
-            subtitle: Text("Node ID: ${r.nodeId}",
-                overflow: TextOverflow.ellipsis, maxLines: 1),
+            subtitle: Text(
+                "${localizations.translate('labels.node_id')}: ${r.nodeId}",
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1),
             trailing: allowModification
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
@@ -488,7 +480,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
           TextButton.icon(
             onPressed: _addRecipient,
             icon: Icon(Icons.add),
-            label: Text("Add Recipient"),
+            label: Text(localizations.translate('labels.add_recipient')),
           ),
       ],
     );
@@ -503,37 +495,68 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(title: Text("Scan Connection QR Code")),
+          appBar: AppBar(
+              title: Text(localizations.translate('labels.scan_qr_code'))),
           body: MobileScanner(
             onDetect: (capture) {
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
                 if (barcode.rawValue != null) {
-                  final data = jsonDecode(barcode.rawValue!);
-                  // Expected QR data structure:
-                  // {
-                  //   "private_key": "...",
-                  //   "connection_id": "...",
-                  //   "connection_name": "...",
-                  //   "recipients": [{"node_id": 123, "custom_name": "Alice"}, ...],
-                  //   "avatar_path": "..."
-                  // }
-                  setState(() {
-                    _privateKeyController.text = data['private_key'] ?? '';
-                    _nameController.text = data['connection_name'] ?? '';
-                    _avatarPath = data['avatar_path'];
-                    if (data['recipients'] != null) {
-                      List<dynamic> recData = data['recipients'];
-                      _recipients = recData.map((e) {
-                        return ConnectionRecipient(
-                          customName: e['custom_name'] ?? '',
-                          nodeId: e['node_id'] ?? 0,
-                        );
-                      }).toList();
+                  try {
+                    final decoded = jsonDecode(barcode.rawValue!);
+                    if (decoded is! Map<String, dynamic>) {
+                      throw Exception(
+                          "QR code does not contain a valid JSON object.");
                     }
-                  });
-                  Navigator.pop(context);
-                  break;
+                    // Check for required keys.
+                    if (!decoded.containsKey("connection_name") ||
+                        !decoded.containsKey("recipients")) {
+                      throw Exception(
+                          "QR code is missing required connection fields.");
+                    }
+                    setState(() {
+                      // Only update connection details if not already set.
+                      if (_privateKeyController.text.isEmpty &&
+                          decoded.containsKey('private_key')) {
+                        _privateKeyController.text =
+                            decoded['private_key'] ?? '';
+                      }
+                      if (_nameController.text.isEmpty) {
+                        _nameController.text = decoded['connection_name'] ?? '';
+                      }
+                      if (decoded['recipients'] != null &&
+                          decoded['recipients'] is List) {
+                        List<dynamic> recData = decoded['recipients'];
+                        List<ConnectionRecipient> scannedRecipients = recData
+                            .map((e) {
+                              if (e is Map<String, dynamic>) {
+                                return ConnectionRecipient(
+                                  customName: e['custom_name'] ?? '',
+                                  nodeId: e['node_id'] ?? 0,
+                                );
+                              }
+                              return null;
+                            })
+                            .whereType<ConnectionRecipient>()
+                            .toList();
+                        // Merge scanned recipients with existing ones.
+                        for (var recipient in scannedRecipients) {
+                          if (!_recipients
+                              .any((r) => r.nodeId == recipient.nodeId)) {
+                            _recipients.add(recipient);
+                          }
+                        }
+                      }
+                    });
+                    // Close scanner on success.
+                    Navigator.pop(context);
+                    break;
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text("QR Scan Error: ${e.toString()}")));
+                    Navigator.pop(context);
+                    break;
+                  }
                 }
               }
             },
@@ -551,12 +574,11 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
       'recipients': _recipients
           .map((r) => {'node_id': r.nodeId, 'custom_name': r.customName})
           .toList(),
-      'avatar_path': _avatarPath,
     });
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text("Connection QR Code"),
+        title: Text(localizations.translate('labels.connection_qr_code')),
         content: SizedBox(
           width: 200,
           height: 200,
@@ -571,7 +593,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Close"),
+            child: Text(localizations.translate('labels.close')),
           ),
         ],
       ),
@@ -645,7 +667,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
               controller:
                   TextEditingController(text: widget.element!.connectionID),
               decoration: InputDecoration(
-                labelText: "Connection ID (unchangeable)",
+                labelText: localizations.translate('labels.connection_id'),
               ),
               readOnly: true,
             ),
@@ -654,7 +676,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
               controller:
                   TextEditingController(text: widget.element!.privateKey),
               decoration: InputDecoration(
-                labelText: "Encryption Key (unchangeable)",
+                labelText: localizations.translate('labels.encryption_key'),
                 suffixIcon: IconButton(
                   icon: Icon(
                       _isObscure ? Icons.visibility : Icons.visibility_off),
@@ -672,7 +694,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
             TextField(
               controller: _nameController,
               decoration: InputDecoration(
-                labelText: "Connection Name",
+                labelText: localizations.translate('labels.connection_name'),
               ),
             ),
             const SizedBox(height: 16),

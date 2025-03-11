@@ -1,0 +1,1 @@
+/home/karol/Documents/Repositories/LoRaptor/app/raptchat/build/app/intermediates/cxx/RelWithDebInfo/3z3ej4g5/obj/arm64-v8a

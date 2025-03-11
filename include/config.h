@@ -75,4 +75,10 @@
 #define MSG_RECIPIENT_REMOVED "msg.recipient.removed"
 #define MSG_SEND_SUCCESS "msg.send.success"
 
+#define FLUSHED_MESSAGES_RETURN_TYPE "type.flush.mess"
+#define NODE_ID_RETURN_TYPE "type.node.id"
+#define RTC_RETURN_TYPE "type.rtc"
+#define PING_RETURN_TYPE "type.ping"
+#define GENERIC_RETURN_TYPE "type.generic"
+
 #endif

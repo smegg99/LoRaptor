@@ -35,8 +35,7 @@ class _MainScreenState extends State<MainScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            AppLocalizations.of(context)
-                .translate('labels.no_device_paired'),
+            AppLocalizations.of(context).translate('labels.no_device_paired'),
           ),
         ),
       );
@@ -77,26 +76,32 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-            localizations.translate('screens.home.labels.delete_selected')),
+            localizations.translate('labels.delete_selected')),
         content: Text(localizations.translateWithParams(
-            'screens.home.labels.delete_selected_confirmation',
+            'labels.delete_selected_confirmation',
             {'amount': _selectedIndices.length.toString()})),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(localizations.translate('screens.home.labels.cancel')),
+            child: Text(localizations.translate('labels.cancel')),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(localizations.translate('screens.home.labels.delete')),
+            child: Text(localizations.translate('labels.delete')),
           ),
         ],
       ),
     );
 
     if (confirm == true) {
+      final bleManager = Provider.of<BleDeviceManager>(context, listen: false);
       for (final element in elementsToDelete) {
+        // Delete locally
         await element.delete();
+        // Send command to device to delete the connection.
+        final deleteCommand = 'delete connection -id "${element.connectionID}"';
+        await bleManager.sendNUSCommand(deleteCommand);
+        print("Sent delete command: $deleteCommand");
       }
       setState(() {
         _isSelectionMode = false;
@@ -110,7 +115,7 @@ class _MainScreenState extends State<MainScreen> {
     String appBarTitle;
     if (_currentIndex == 0) {
       appBarTitle = _isSelectionMode
-          ? localizations.translateWithParams('screens.home.labels.selected',
+          ? localizations.translateWithParams('labels.selected',
               {'amount': _selectedIndices.length.toString()})
           : localizations.translate('screens.home.title');
     } else if (_currentIndex == 1) {

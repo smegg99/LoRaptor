@@ -21,7 +21,7 @@ ExecutableCommand readyExecCmd;
 ExecutableCommand listExecCmd;
 
 void executeReturnCommand(const std::string& value) {
-	returnExecCmd.toOutputWithArgs({ {"v", {Value(value)}} });
+	returnExecCmd.toOutputWithArgs({ {"t", GENERIC_RETURN_TYPE}, { "v", {Value(value)} } });
 }
 
 void executeErrorCommand(const std::string& errorMessage) {
@@ -102,7 +102,7 @@ void sendCallback(const Command& cmd) {
 	std::string message(cmd.arguments[1].values[0].toString());
 	Connection* c = connectionManager.getConnection(connectionID);
 	if (c == nullptr) {
-		executeReturnCommand(ERROR_CONN_NOT_FOUND);
+		executeErrorCommand(ERROR_CONN_NOT_FOUND);
 		return;
 	}
 
@@ -132,15 +132,15 @@ void flushCallback(const Command& cmd) {
 	std::string connectionID(cmd.arguments[0].values[0].toString());
 	Connection* c = connectionManager.getConnection(connectionID);
 	if (c == nullptr) {
-		executeReturnCommand(ERROR_CONN_NOT_FOUND);
+		executeErrorCommand(ERROR_CONN_NOT_FOUND);
 		return;
 	}
 
 	std::vector<Message> messages = c->flushIncomingMessages();
-	for (const Message& msg : messages) {
-		std::string content = msg.getContent();
-		output->println(content.c_str());
-	}
+	// for (const Message& msg : messages) {
+	// 	std::string content = msg.getContent();
+	// 	output->println(content.c_str());
+	// }
 
 	Value messagesList;
 	messagesList.type = VAL_LIST;
@@ -167,7 +167,7 @@ void flushCallback(const Command& cmd) {
 		messagesList.listValue.push_back(messageData);
 	}
 
-	returnExecCmd.toOutputWithArgs({ {"v", messagesList} });
+	returnExecCmd.toOutputWithArgs({ {"t", FLUSHED_MESSAGES_RETURN_TYPE}, { "v", messagesList } });
 }
 
 void listConnectionsCallback(const Command& cmd) {
@@ -259,6 +259,7 @@ void registerCommands() {
 	sendCmd.addArgSpec(ArgSpec("m", VAL_STRING, true, "Message"));
 	dispatcher.registerCommand(sendCmd);
 
+	// TODO: Add an action for successfully receiving a message
 	Command flushCmd("flush", "Flushes the message queue", output, flushCallback);
 	flushCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "Connection ID"));
 	dispatcher.registerCommand(flushCmd);
@@ -273,14 +274,14 @@ void registerCommands() {
 	// --- Value Commands ---
 	Command getCmd("get", "Gets a value", output);
 	Command getNodeIDCmd("nodeID", "Gets the node ID", output, [] (const Command& cmd) {
-		returnExecCmd.toOutputWithArgs({ {"v", {Value(std::to_string(meshManager.getLocalAddress()))}} });
+		returnExecCmd.toOutputWithArgs({ {"t", NODE_ID_RETURN_TYPE}, {"v", {Value(std::to_string(meshManager.getLocalAddress()))}} });
 		});
 	getCmd.addSubcommand(getNodeIDCmd);
 
 	Command getRTCTime("rtc", "Gets the RTC time", output, [] (const Command& cmd) {
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
-		returnExecCmd.toOutputWithArgs({ {"v", {Value(std::to_string(tv.tv_sec))}} });
+		returnExecCmd.toOutputWithArgs({ {"t", RTC_RETURN_TYPE}, {"v", {Value(std::to_string(tv.tv_sec))}} });
 		});
 	getCmd.addSubcommand(getRTCTime);
 
@@ -303,9 +304,11 @@ void registerCommands() {
 	setRTCTime.addArgSpec(ArgSpec("t", VAL_INT, true, "Time in seconds since epoch"));
 	setCmd.addSubcommand(setRTCTime);
 
+	// TODO: Add set location command, add get location command from different nodes
+
 	// --- Miscellaneous ---
 	Command pingCmd("ping", "Pings the system to check if it's responsive", output, [] (const Command& cmd) {
-		returnExecCmd.toOutputWithArgs({ {"v", {Value("pong")}} });
+		returnExecCmd.toOutputWithArgs({ {"t", PING_RETURN_TYPE}, { "v", {Value("pong")} } });
 		});
 	dispatcher.registerCommand(pingCmd);
 

@@ -1,4 +1,3 @@
-// lib/main.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:dynamic_color/dynamic_color.dart';
@@ -9,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:raptchat/models/ble_device.dart';
 import 'package:raptchat/models/connection_element.dart';
 import 'package:raptchat/models/connection_recipient.dart';
+import 'package:raptchat/models/message.dart';
 import 'package:raptchat/models/settings_element.dart';
 import 'package:raptchat/screens/chat_screen.dart';
 import 'package:raptchat/theme/notifier.dart';
@@ -18,6 +18,7 @@ import 'package:raptchat/screens/connection_edit_screen.dart';
 import 'package:raptchat/screens/settings_screen.dart';
 import 'package:raptchat/screens/devices_screen.dart';
 import 'package:raptchat/managers/ble_device_manager.dart';
+import 'package:raptchat/managers/messages_manager.dart';
 
 Future<Directory> _createAppDirectory(Directory appDir) async {
   try {
@@ -55,8 +56,13 @@ void main() async {
   Hive.registerAdapter(SettingsElementAdapter());
   Hive.registerAdapter(BleDeviceAdapter());
   Hive.registerAdapter(ConnectionRecipientAdapter());
+  Hive.registerAdapter(MessageAdapter());
+
   await Hive.openBox<ConnectionElement>('connection_elements');
   await Hive.openBox<BleDevice>('ble_devices');
+  // Open the messages box without a generic type.
+  await Hive.openBox('messages');
+
   final settingsBox = await Hive.openBox<SettingsElement>('settings');
   final settings = settingsBox.get(0);
 
@@ -99,6 +105,12 @@ void main() async {
             ),
             ChangeNotifierProvider(
               create: (_) => BleDeviceManager(),
+            ),
+            ChangeNotifierProvider(
+              create: (context) => MessagesManager(
+                bleDeviceManager:
+                    Provider.of<BleDeviceManager>(context, listen: false),
+              ),
             ),
           ],
           child: MyApp(

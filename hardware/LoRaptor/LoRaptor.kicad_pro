@@ -690,7 +690,7 @@
       "pos_files": "",
       "specctra_dsn": "",
       "step": "../../ogom_device.step",
-      "svg": "",
+      "svg": "../../../../",
       "vrml": ""
     },
     "page_layout_descr_file": ""

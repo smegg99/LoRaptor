@@ -87,10 +87,15 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        device.displayName,
-                        style: Theme.of(context).textTheme.headlineLarge,
-                      ),
+                        ValueListenableBuilder<TextEditingValue>(
+                        valueListenable: _customNameController,
+                        builder: (context, value, child) {
+                          return Text(
+                          device.displayName,
+                          style: Theme.of(context).textTheme.headlineLarge,
+                          );
+                        },
+                        ),
                       Text('Node ID: ${device.nodeId}'),
                       const SizedBox(height: 16),
                       TextField(
@@ -107,13 +112,13 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           ElevatedButton(
                             onPressed: () async {
                               final box = await Hive.openBox<String>(
-                                  'saved_ble_devices');
+                                'saved_ble_devices');
                               final newName = _customNameController.text.trim();
                               if (newName.isNotEmpty) {
-                                await box.put(device.macAddress, newName);
-                                setState(() {
-                                  device.displayName = newName;
-                                });
+                              await box.put(device.macAddress, newName);
+                              setState(() {
+                                device.displayName = newName;
+                              });
                               }
                             },
                             child: Text(AppLocalizations.of(context)

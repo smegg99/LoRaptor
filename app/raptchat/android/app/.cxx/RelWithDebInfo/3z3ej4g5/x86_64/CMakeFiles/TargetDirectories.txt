@@ -1,0 +1,2 @@
+/home/karol/Documents/Repositories/LoRaptor/app/raptchat/android/app/.cxx/RelWithDebInfo/3z3ej4g5/x86_64/CMakeFiles/edit_cache.dir
+/home/karol/Documents/Repositories/LoRaptor/app/raptchat/android/app/.cxx/RelWithDebInfo/3z3ej4g5/x86_64/CMakeFiles/rebuild_cache.dir
