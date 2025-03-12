@@ -26,8 +26,8 @@ class BleDeviceListItem extends StatelessWidget {
     Widget? trailingIcon;
 
     if (connectionError) {
-      tileColor = Colors.red.shade100;
-      trailingIcon = Icon(Icons.error, color: Colors.red);
+      tileColor = Theme.of(context).colorScheme.errorContainer;
+      trailingIcon = Icon(Icons.error, color: Theme.of(context).colorScheme.error);
     } else if (isConnected) {
       tileColor = theme.colorScheme.primaryContainer;
       trailingIcon = Icon(Icons.check, color: theme.colorScheme.secondary);
@@ -50,7 +50,7 @@ class BleDeviceListItem extends StatelessWidget {
             ? Icon(Icons.star, color: theme.colorScheme.onPrimary)
             : Icon(Icons.bluetooth, color: theme.colorScheme.onPrimary),
       ),
-      title: Text(device.displayName),
+      title: Text(device.displayName, style: TextStyle(color: theme.colorScheme.onPrimaryContainer)),
       subtitle: Text('MAC: ${device.macAddress}'),
       trailing: trailingIcon,
       onTap: onTap,

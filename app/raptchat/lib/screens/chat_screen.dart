@@ -87,11 +87,11 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!isChatAllowed)
             Container(
               width: double.infinity,
-              color: Colors.redAccent,
+              color: Theme.of(context).colorScheme.error,
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 localizations.translate('labels.messaging_disabled_not_paired'),
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -105,7 +105,9 @@ class _ChatScreenState extends State<ChatScreen> {
                     .addPostFrameCallback((_) => _scrollToBottom());
 
                 if (messages.isEmpty) {
-                  return Center(child: Text(localizations.translate('labels.no_messages')));
+                  return Center(
+                      child:
+                          Text(localizations.translate('labels.no_messages')));
                 }
                 return ListView.builder(
                   controller: _scrollController,
@@ -155,17 +157,23 @@ class _ChatScreenState extends State<ChatScreen> {
                                       DateTime.fromMillisecondsSinceEpoch(
                                           msg.timestamp),
                                     ),
-                                    style: const TextStyle(
-                                        fontSize: 10, color: Colors.grey),
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer),
                                   ),
                                   if (msg.isPending) ...[
                                     const SizedBox(width: 8),
                                     Text(
                                       localizations.translate('sending'),
                                       style: TextStyle(
-                                          fontSize: 10,
-                                          fontStyle: FontStyle.italic,
-                                          color: Colors.grey),
+                                        fontSize: 10,
+                                        fontStyle: FontStyle.italic,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onPrimaryContainer,
+                                      ),
                                     ),
                                   ],
                                 ],
@@ -187,7 +195,8 @@ class _ChatScreenState extends State<ChatScreen> {
                               padding: const EdgeInsets.only(right: 8.0),
                               child: CircleAvatar(
                                 radius: 16,
-                                backgroundColor: Colors.grey.shade300,
+                                backgroundColor:
+                                    Theme.of(context).colorScheme.primary,
                                 backgroundImage: (senderInfo != null &&
                                         senderInfo.avatarPath != null)
                                     ? FileImage(File(senderInfo.avatarPath!))
@@ -200,7 +209,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                             ? senderInfo!.customName[0]
                                                 .toUpperCase()
                                             : msg.senderNodeID.toString(),
-                                        style: const TextStyle(fontSize: 12),
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onPrimary),
                                       )
                                     : null,
                               ),
@@ -219,13 +232,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(12),
                                     decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
                                       msg.content,
-                                      style:
-                                          const TextStyle(color: Colors.black),
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSecondaryContainer),
                                     ),
                                   ),
                                   Text(
@@ -233,8 +250,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                       DateTime.fromMillisecondsSinceEpoch(
                                           msg.timestamp),
                                     ),
-                                    style: const TextStyle(
-                                        fontSize: 10, color: Colors.grey),
+                                    style: TextStyle(
+                                        fontSize: 10,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSecondaryContainer),
                                   ),
                                 ],
                               ),
@@ -260,7 +280,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: InputDecoration(
                       hintText: isChatAllowed
                           ? localizations.translate('labels.message_hint')
-                          : localizations.translate('labels.messaging_disabled'),
+                          : localizations
+                              .translate('labels.messaging_disabled'),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20)),
                     ),

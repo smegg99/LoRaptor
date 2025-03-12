@@ -63,8 +63,7 @@ class _ConnectionsPageState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.speaker_notes_off,
-                    size: 64, color: Colors.grey),
+                Icon(Icons.speaker_notes_off, size: 64, color: Theme.of(context).colorScheme.onSurface),
                 const SizedBox(height: 16),
                 Text(localizations.translate('labels.no_connections')),
               ],

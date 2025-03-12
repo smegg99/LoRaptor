@@ -241,7 +241,8 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
             toolbarTitle: localizations.translate('labels.adjust_avatar'),
             cropStyle: CropStyle.circle,
             toolbarColor: Theme.of(context).primaryColor,
-            toolbarWidgetColor: Colors.white,
+            toolbarWidgetColor:
+                Theme.of(context).colorScheme.onPrimaryContainer,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
             hideBottomControls: true,
@@ -265,16 +266,6 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
   }
 
   Future<void> _pickRecipientAvatar(int index) async {
-    final currentNodeID = Provider.of<BleDeviceManager>(context, listen: false)
-            .connectedDevice
-            ?.nodeId ??
-        0;
-
-    final allowModification = widget.element == null ||
-        (widget.element != null &&
-            widget.element!.ownerNodeID == currentNodeID);
-    if (!allowModification) return;
-
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -287,7 +278,8 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
             toolbarTitle: localizations.translate('labels.adjust_avatar'),
             cropStyle: CropStyle.circle,
             toolbarColor: Theme.of(context).primaryColor,
-            toolbarWidgetColor: Colors.white,
+            toolbarWidgetColor:
+                Theme.of(context).colorScheme.onPrimaryContainer,
             initAspectRatio: CropAspectRatioPreset.square,
             lockAspectRatio: true,
             hideBottomControls: true,
@@ -439,7 +431,7 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
             leading: GestureDetector(
               onTap: () => _pickRecipientAvatar(index),
               child: CircleAvatar(
-                backgroundColor: Colors.grey.shade300,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 backgroundImage: r.avatarPath != null
                     ? FileImage(File(r.avatarPath!))
                     : null,
@@ -448,6 +440,11 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
                         r.customName.isNotEmpty
                             ? r.customName[0].toUpperCase()
                             : '',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 24,
+                            ),
                       )
                     : null,
               ),
@@ -491,13 +488,27 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
   }
 
   void _scanQRCode() {
+    // Create a controller for MobileScanner.
+    final MobileScannerController scannerController = MobileScannerController();
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => Scaffold(
           appBar: AppBar(
-              title: Text(localizations.translate('labels.scan_qr_code'))),
+            title: Text(localizations.translate('labels.scan_qr_code')),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  scannerController.dispose();
+                  Navigator.pop(context);
+                },
+              )
+            ],
+          ),
           body: MobileScanner(
+            controller: scannerController,
             onDetect: (capture) {
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
@@ -508,54 +519,84 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
                       throw Exception(
                           "QR code does not contain a valid JSON object.");
                     }
-                    // Check for required keys.
-                    if (!decoded.containsKey("connection_name") ||
-                        !decoded.containsKey("recipients")) {
-                      throw Exception(
-                          "QR code is missing required connection fields.");
-                    }
-                    setState(() {
-                      // Only update connection details if not already set.
-                      if (_privateKeyController.text.isEmpty &&
-                          decoded.containsKey('private_key')) {
-                        _privateKeyController.text =
-                            decoded['private_key'] ?? '';
-                      }
-                      if (_nameController.text.isEmpty) {
-                        _nameController.text = decoded['connection_name'] ?? '';
-                      }
-                      if (decoded['recipients'] != null &&
-                          decoded['recipients'] is List) {
-                        List<dynamic> recData = decoded['recipients'];
-                        List<ConnectionRecipient> scannedRecipients = recData
-                            .map((e) {
-                              if (e is Map<String, dynamic>) {
-                                return ConnectionRecipient(
-                                  customName: e['custom_name'] ?? '',
-                                  nodeId: e['node_id'] ?? 0,
-                                );
-                              }
-                              return null;
-                            })
-                            .whereType<ConnectionRecipient>()
-                            .toList();
-                        // Merge scanned recipients with existing ones.
-                        for (var recipient in scannedRecipients) {
-                          if (!_recipients
-                              .any((r) => r.nodeId == recipient.nodeId)) {
-                            _recipients.add(recipient);
+
+                    // Case 1: Full connection data.
+                    if (decoded.containsKey('connection_name') &&
+                        decoded.containsKey('recipients')) {
+                      debugPrint("Scanned full connection QR code: $decoded");
+                      setState(() {
+                        // Update private key if empty.
+                        if (_privateKeyController.text.isEmpty &&
+                            decoded.containsKey('private_key')) {
+                          _privateKeyController.text =
+                              decoded['private_key'] ?? '';
+                        }
+                        // Update connection name if empty.
+                        if (_nameController.text.isEmpty) {
+                          _nameController.text =
+                              decoded['connection_name'] ?? '';
+                        }
+                        // Merge recipients.
+                        if (decoded['recipients'] is List) {
+                          List<dynamic> recData = decoded['recipients'];
+                          List<ConnectionRecipient> scannedRecipients = recData
+                              .map((e) {
+                                if (e is Map<String, dynamic>) {
+                                  return ConnectionRecipient(
+                                    customName: e['custom_name'] ?? '',
+                                    nodeId: e['node_id'] ?? 0,
+                                  );
+                                }
+                                return null;
+                              })
+                              .whereType<ConnectionRecipient>()
+                              .toList();
+                          for (var recipient in scannedRecipients) {
+                            if (!_recipients
+                                .any((r) => r.nodeId == recipient.nodeId)) {
+                              _recipients.add(recipient);
+                            }
                           }
                         }
-                      }
-                    });
-                    // Close scanner on success.
-                    Navigator.pop(context);
-                    break;
+                      });
+                      debugPrint(
+                          "Updated fields: name=${_nameController.text}, privateKey=${_privateKeyController.text}, recipients=$_recipients");
+                      // Dispose controller and exit scanner screen.
+                      scannerController.dispose();
+                      Navigator.pop(context);
+                      return;
+                    }
+                    // Case 2: Recipient-only data.
+                    else if (decoded.containsKey('node_id') &&
+                        decoded.containsKey('custom_name')) {
+                      debugPrint("Scanned recipient-only QR code: $decoded");
+                      final int scannedNodeId = decoded['node_id'];
+                      final String scannedCustomName =
+                          decoded['custom_name'] ?? '';
+                      setState(() {
+                        if (!_recipients
+                            .any((r) => r.nodeId == scannedNodeId)) {
+                          _recipients.add(ConnectionRecipient(
+                            customName: scannedCustomName,
+                            nodeId: scannedNodeId,
+                          ));
+                        }
+                      });
+                      debugPrint("Updated recipients: $_recipients");
+                      scannerController.dispose();
+                      Navigator.pop(context);
+                      return;
+                    }
+                    throw Exception(
+                        "QR code does not contain valid connection or recipient data.");
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text("QR Scan Error: ${e.toString()}")));
+                    debugPrint("QR Scan Exception: $e");
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("QR Scan Error: ${e.toString()}")),
+                    );
+                    scannerController.dispose();
                     Navigator.pop(context);
-                    break;
+                    return;
                   }
                 }
               }
@@ -584,6 +625,15 @@ class _ConnectionEditScreenState extends State<ConnectionEditScreen> {
           height: 200,
           child: Center(
             child: QrImageView(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              eyeStyle: QrEyeStyle(
+                eyeShape: QrEyeShape.square,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+              dataModuleStyle: QrDataModuleStyle(
+                dataModuleShape: QrDataModuleShape.square,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
               data: data,
               version: QrVersions.auto,
               size: 200.0,

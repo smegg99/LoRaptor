@@ -47,7 +47,8 @@
 		"sending": "Sending...",
 		"message_hint": "Type a message...",
 		"messaging_disabled": "Messaging is disabled",
-		"messaging_disabled_not_paired": "Messaging is disabled, pair with the owning device!"
+		"messaging_disabled_not_paired": "Messaging is disabled, pair with the owning device!",
+		"no_messages": "No messages"
 	},
 	"screens": {
 		"home": {

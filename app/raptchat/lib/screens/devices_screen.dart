@@ -19,6 +19,7 @@ class DevicesScreen extends StatefulWidget {
 class _DevicesScreenState extends State<DevicesScreen> {
   Timer? _scanTimer;
   bool _isBottomSheetDisplayed = false;
+  AppLocalizations get localizations => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -87,16 +88,16 @@ class _DevicesScreenState extends State<DevicesScreen> {
                         color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 16),
-                        ValueListenableBuilder<TextEditingValue>(
+                      ValueListenableBuilder<TextEditingValue>(
                         valueListenable: _customNameController,
                         builder: (context, value, child) {
                           return Text(
-                          device.displayName,
-                          style: Theme.of(context).textTheme.headlineLarge,
+                            device.displayName,
+                            style: Theme.of(context).textTheme.headlineLarge,
                           );
                         },
-                        ),
-                      Text('Node ID: ${device.nodeId}'),
+                      ),
+                      Text('${localizations.translate("labels.node_id")}: ${device.nodeId}'),
                       const SizedBox(height: 16),
                       TextField(
                         controller: _customNameController,
@@ -112,13 +113,13 @@ class _DevicesScreenState extends State<DevicesScreen> {
                           ElevatedButton(
                             onPressed: () async {
                               final box = await Hive.openBox<String>(
-                                'saved_ble_devices');
+                                  'saved_ble_devices');
                               final newName = _customNameController.text.trim();
                               if (newName.isNotEmpty) {
-                              await box.put(device.macAddress, newName);
-                              setState(() {
-                                device.displayName = newName;
-                              });
+                                await box.put(device.macAddress, newName);
+                                setState(() {
+                                  device.displayName = newName;
+                                });
                               }
                             },
                             child: Text(AppLocalizations.of(context)
@@ -175,8 +176,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.bluetooth_disabled,
-                    size: 64, color: Colors.grey),
+                Icon(Icons.bluetooth_disabled,
+                    size: 64, color: Theme.of(context).colorScheme.error),
                 const SizedBox(height: 16),
                 Text(AppLocalizations.of(context)
                     .translate('labels.bluetooth_disabled')),
@@ -209,8 +210,8 @@ class _DevicesScreenState extends State<DevicesScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.search_off,
-                              size: 64, color: Colors.grey),
+                          Icon(Icons.search_off,
+                              size: 64, color: Theme.of(context).colorScheme.error),
                           const SizedBox(height: 16),
                           Text(AppLocalizations.of(context)
                               .translate('labels.no_devices')),

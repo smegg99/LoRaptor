@@ -36,6 +36,7 @@ dependencies:
   flutter_blue_plus: ^1.35.3
   test: ^1.25.15
   collection: ^1.19.1
+  flutter_launcher_icons: ^0.14.3
 
 dev_dependencies:
   flutter_test:
@@ -73,3 +74,10 @@ flutter:
         - asset: assets/fonts/Overpass-VariableFont_wght.ttf
         - asset: assets/fonts/Overpass-Italic-VariableFont_wght.ttf
           style: italic
+
+flutter_icons:
+  android: true
+  ios: false  # Since you only need an APK
+  image_path: "assets/icon.png"  # Your converted PNG
+  adaptive_icon_foreground: "assets/icon.png"  # For Android adaptive icons
+  adaptive_icon_background: "#ffffff"  # Or use a PNG background

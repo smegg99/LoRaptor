@@ -47,7 +47,8 @@
 		"sending": "Wysyłanie...",
 		"message_hint": "Wpisz wiadomość...",
 		"messaging_disabled": "Wiadomości są wyłączone",
-		"messaging_disabled_not_paired": "Wiadomości są wyłączone, sparuj się z właściwym urządzeniem!"
+		"messaging_disabled_not_paired": "Wiadomości są wyłączone, sparuj się z właściwym urządzeniem!",
+		"no_messages": "Brak wiadomości"
 	},
 	"screens": {
 		"home": {

@@ -41,7 +41,7 @@ class _ConnectionListItemState extends State<ConnectionListItem> {
       child: CircleAvatar(
         radius: 12,
         backgroundColor:
-            widget.isActive ? theme.colorScheme.primary : Colors.grey.shade400,
+            widget.isActive ? theme.colorScheme.primary : Theme.of(context).colorScheme.onSurfaceVariant,
         backgroundImage: recipient.avatarPath != null
             ? FileImage(File(recipient.avatarPath!))
             : null,
@@ -78,12 +78,12 @@ class _ConnectionListItemState extends State<ConnectionListItem> {
     // Define text styles; if not active, show in grey.
     final titleStyle = widget.isActive
         ? theme.textTheme.titleLarge
-        : theme.textTheme.titleLarge?.copyWith(color: Colors.grey);
+        : theme.textTheme.titleLarge?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
     final subtitleStyle = widget.isActive
         ? theme.textTheme.bodySmall
-        : theme.textTheme.bodySmall?.copyWith(color: Colors.grey);
+        : theme.textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant);
     final avatarBg =
-        widget.isActive ? theme.colorScheme.onSurfaceVariant : Colors.grey[400];
+        widget.isActive ? theme.colorScheme.onSurfaceVariant : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return GestureDetector(
       onTap: widget.onTap,
