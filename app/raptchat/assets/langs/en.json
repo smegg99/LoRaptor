@@ -1,5 +1,6 @@
 {
 	"labels": {
+		"no_nodes_found": "No nodes found!",
 		"no_connections": "No connections!",
 		"delete_selected": "Delete Selected Items",
 		"delete_selected_confirmation": "Are you sure you want to delete {amount} items?",

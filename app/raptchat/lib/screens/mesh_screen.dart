@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:raptchat/localization/localization.dart';
 import 'package:raptchat/managers/messages_manager.dart';
 import 'package:raptchat/widgets/mesh_device_list_item.dart';
 
@@ -13,6 +14,8 @@ class MeshScreen extends StatefulWidget {
 
 class _MeshScreenState extends State<MeshScreen> {
   Timer? _listNodesTimer;
+
+  AppLocalizations get localizations => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -46,7 +49,7 @@ class _MeshScreenState extends State<MeshScreen> {
       builder: (context, messagesManager, child) {
         final nodes = messagesManager.meshNodes;
         if (nodes.isEmpty) {
-          return Center(child: Text("No mesh nodes found."));
+          return Center(child: Text(localizations.translate('labels.no_nodes_found')));
         }
         return ListView.builder(
           itemCount: nodes.length,

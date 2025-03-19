@@ -1,5 +1,6 @@
 {
 	"labels": {
+		"no_nodes_found": "Nie znaleziono węzłów!",
 		"no_connections": "Brak połączeń!",
 		"delete_selected": "Usuń wybrane elementy",
 		"delete_selected_confirmation": "Czy na pewno chcesz usunąć {amount} elementów?",
