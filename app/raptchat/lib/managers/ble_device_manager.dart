@@ -223,7 +223,7 @@ class BleDeviceManager extends ChangeNotifier {
       timeout: timeout,
       oneByOne: true,
       continuousUpdates: true,
-      androidScanMode: AndroidScanMode.lowLatency,
+      androidScanMode: AndroidScanMode.balanced,
     );
     FlutterBluePlus.isScanning
         .where((scanning) => scanning == false)
