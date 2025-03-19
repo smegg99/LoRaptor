@@ -12,8 +12,8 @@ MeshManager::MeshManager() {}
 
 void MeshManager::init() {
 	DEBUG_PRINTLN("MeshManager initialized");
-	std::vector<uint16_t> recipients = {53052, 16888};
-	connectionManager.createConnection("debug", "debug", recipients, &loraComm);
+	// std::vector<uint16_t> recipients = {53052, 16888};
+	// connectionManager.createConnection("debug", "debug", recipients, &loraComm);
 	loraComm.init();
 	loraComm.startReceiveTask();
 }

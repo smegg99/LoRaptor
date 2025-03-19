@@ -35,6 +35,16 @@ void RGBFeedback::initializeDefaults() {
 		INTERP_SINUSOIDAL
 	};
 
+	defaults[ACTION_COMM_DECRYPTED] = {
+		0.0f, 1.0f, 0.15f,
+		0.0f, 0.15f, 0.015f,
+		EFFECT_BLINK,
+		50,
+		300,
+		1.0f,
+		INTERP_SINUSOIDAL
+	};
+
 	defaults[ACTION_COMM_DELIVERED] = {
 		0.0f, 1.0f, 0.0f,
 		0.0f, 0.15f, 0.0f,

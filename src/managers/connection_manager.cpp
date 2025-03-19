@@ -3,8 +3,11 @@
 #include "managers/mesh_manager.h"
 #include "objects/payload.h"
 #include "objects/message.h"
+#include "rgb/rgb_feedback.h"
 #include "config.h"
 #include <algorithm>
+
+extern RGBFeedback rgbFeedback;
 
 ConnectionManager::ConnectionManager() {}
 
@@ -52,11 +55,31 @@ void ConnectionManager::processIncomingMessage(const std::string& msg, const uin
 	DEBUG_PRINTLN(("Checking against " + std::to_string(connections.size()) + " connections").c_str());
 	for (Connection* conn : connections) {
 		Payload p(conn->getID(), 0, msg);
-		if (Payload::decode(msg, conn->getKey(), p)) {
+		DEBUG_PRINTLN(("Attempting to decode message with connection key for connection " + conn->getID()).c_str());
+		std::string key = conn->getKey();
+		if (key.empty()) {
+			DEBUG_PRINTLN(("Connection " + conn->getID() + " has no key").c_str());
+			continue;
+		}
+		DEBUG_PRINTLN(("Message content: " + msg).c_str());
+		DEBUG_PRINTLN(("Connection key: " + key).c_str());
+		
+		bool decodeSuccess = false;
+		try {
+			decodeSuccess = Payload::decode(msg, key, p);
+		} catch (const std::exception& e) {
+			DEBUG_PRINTLN(("Exception during decode: " + std::string(e.what())).c_str());
+		} catch (...) {
+			DEBUG_PRINTLN("Unknown exception during decode");
+		}
+		
+		if (decodeSuccess) {
 			DEBUG_PRINTLN(("Decrypted message with connection key for connection " + conn->getID()).c_str());
 			if (p.getType() == PayloadType::ACK) {
+#ifndef DISABLE_CONNECTION_LAYER_ACK
 				std::string ackHash = p.getContent();
 				conn->acknowledgeMessage(ackHash);
+#endif
 			}
 			else {
 				Message m(p.getContent(), p.getEpoch(), senderNodeID);
@@ -65,6 +88,7 @@ void ConnectionManager::processIncomingMessage(const std::string& msg, const uin
 #ifndef DISABLE_CONNECTION_LAYER_ACK
 				conn->sendACK(senderNodeID, msgHash);
 #endif
+				rgbFeedback.enqueueAction(ACTION_COMM_DECRYPTED);
 			}
 		}
 		else {
@@ -127,20 +151,22 @@ void ConnectionManager::processOutgoingMessages() {
 
 bool ConnectionManager::processOutgoingMessageNow(Message message, Connection* conn) {
 	if (conn == nullptr) return false;
-	
+
 	extern MeshManager meshManager;
 	bool success = false;
-	
+
 	try {
 		meshManager.sendMessage(conn, message.encodedContent);
 		success = true;
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception& e) {
 		DEBUG_PRINTLN(("Error sending message: " + std::string(e.what())).c_str());
 		success = false;
-	} catch (...) {
+	}
+	catch (...) {
 		DEBUG_PRINTLN("Unknown error occurred while sending message");
 		success = false;
 	}
-	
+
 	return success;
 }

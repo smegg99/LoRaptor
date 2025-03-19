@@ -13,6 +13,7 @@ typedef NewMessageCallback = void Function(
     int senderNodeID, int epochSeconds, String message);
 typedef GenericReturnCallback = void Function(String value);
 typedef FlushReceivedCallback = void Function(List<List<dynamic>> flushData);
+typedef ListNodesCallback = void Function(List<dynamic> nodesList);
 
 class BleDeviceManager extends ChangeNotifier {
   BleDevice? _connectedDevice;
@@ -53,6 +54,7 @@ class BleDeviceManager extends ChangeNotifier {
   NewMessageCallback? onNewMessageReceived;
   GenericReturnCallback? onGenericReturn;
   FlushReceivedCallback? onFlushReceived;
+  ListNodesCallback? onListNodesReceived;
 
   void registerNewMessageCallback(NewMessageCallback callback) {
     onNewMessageReceived = callback;
@@ -349,22 +351,65 @@ class BleDeviceManager extends ChangeNotifier {
               for (var subList in flushData) {
                 // Validate the structure of each sublist
                 if (subList.length < 3) {
-                  print("Skipping invalid flush data item: $subList (insufficient elements)");
+                  print(
+                      "Skipping invalid flush data item: $subList (insufficient elements)");
                   continue;
                 }
-                
+
                 try {
-                  int senderNodeID = subList[0] is int ? subList[0] : int.parse(subList[0].toString());
-                  int timestamp = subList[1] is int ? subList[1] : int.parse(subList[1].toString());
+                  int senderNodeID = subList[0] is int
+                      ? subList[0]
+                      : int.parse(subList[0].toString());
+                  int timestamp = subList[1] is int
+                      ? subList[1]
+                      : int.parse(subList[1].toString());
                   String message = subList[2].toString();
-                  
-                  print("Flush data item: $senderNodeID - $timestamp - $message");
+
+                  print(
+                      "Flush data item: $senderNodeID - $timestamp - $message");
                 } catch (e) {
                   print("Error processing flush data item: $subList - $e");
                 }
               }
               if (onFlushReceived != null) {
                 onFlushReceived!(flushData);
+              }
+            }
+            return;
+          } else if (typeVal == "type.list.nodes") {
+            // This is a list nodes response.
+            final argV =
+                cmd.arguments.firstWhereOrNull((arg) => arg.name == "v");
+            if (argV != null && argV.values.isNotEmpty) {
+              print("List nodes response data: ${argV.values[0]}");
+              final nodesOuter = argV.values[0].listValue ?? [];
+              List<dynamic> nodesList = [];
+              for (var node in nodesOuter) {
+                if (node.type == ValueType.intType) {
+                  nodesList.add(node.intValue ?? 0);
+                } else if (node.type == ValueType.stringType) {
+                  // Remove any extra quotes and parse.
+                  String raw = node.stringValue ?? "0";
+                  String trimmed = raw.replaceAll('"', '');
+                  int nodeId = int.tryParse(trimmed) ?? 0;
+                  nodesList.add(nodeId);
+                } else if (node.type == ValueType.listType) {
+                  // If the node itself is a list, iterate its values.
+                  for (var subNode in node.listValue ?? []) {
+                    if (subNode.type == ValueType.intType) {
+                      nodesList.add(subNode.intValue ?? 0);
+                    } else if (subNode.type == ValueType.stringType) {
+                      String raw = subNode.stringValue ?? "0";
+                      String trimmed = raw.replaceAll('"', '');
+                      int nodeId = int.tryParse(trimmed) ?? 0;
+                      nodesList.add(nodeId);
+                    }
+                  }
+                }
+              }
+              print("Processed nodes list: $nodesList");
+              if (onListNodesReceived != null) {
+                onListNodesReceived!(nodesList);
               }
             }
             return;

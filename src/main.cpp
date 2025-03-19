@@ -62,12 +62,14 @@ void commandProcessingTask(void* param) {
 	}
 }
 
+#ifdef USE_SERIAL_COMM
 void commProcessTask(void* parameter) {
 	for (;;) {
 		commChannel->process();
 		vTaskDelay(100 / portTICK_PERIOD_MS);
 	}
 }
+#endif
 
 #ifndef DISABLE_OUTGOING_MESSAGES_BUFFER
 void outgoingMessageTask(void* parameter) {
@@ -178,7 +180,9 @@ void setup() {
 	registerCommands();
 
 	xTaskCreate(commandProcessingTask, "CommandProcessingTask", 32768, NULL, 1, NULL);
+#ifdef USE_SERIAL_COMM
 	xTaskCreate(commProcessTask, "CommProcessTask", 32768, NULL, 1, NULL);
+#endif
 #ifndef DISABLE_OUTGOING_MESSAGES_BUFFER
 	xTaskCreate(outgoingMessageTask, "OutgoingMessageTask", 32768, NULL, 1, NULL);
 #endif

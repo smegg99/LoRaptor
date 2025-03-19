@@ -17,6 +17,7 @@ import 'package:raptchat/screens/main_screen.dart';
 import 'package:raptchat/screens/connection_edit_screen.dart';
 import 'package:raptchat/screens/settings_screen.dart';
 import 'package:raptchat/screens/devices_screen.dart';
+import 'package:raptchat/screens/mesh_screen.dart';
 import 'package:raptchat/managers/ble_device_manager.dart';
 import 'package:raptchat/managers/messages_manager.dart';
 
@@ -181,6 +182,7 @@ class _MyAppState extends State<MyApp> {
             ),
         '/settings': (context) => SettingsScreen(onLocaleChange: _setLocale),
         '/devices': (context) => const DevicesScreen(isActive: false),
+        '/mesh': (context) => const MeshScreen(),
         '/chat': (context) => ChatScreen(
               connection: ModalRoute.of(context)!.settings.arguments
                   as ConnectionElement,

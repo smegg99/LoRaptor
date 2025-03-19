@@ -28,6 +28,9 @@ class MessagesManager extends ChangeNotifier {
   // In-memory map from connection ID to list of messages.
   final Map<String, List<Message>> _messages = {};
 
+  List<int> _meshNodes = [];
+  List<int> get meshNodes => _meshNodes;
+
   Timer? _flushTimer;
   late Box _messagesBox;
 
@@ -36,9 +39,17 @@ class MessagesManager extends ChangeNotifier {
     _loadMessagesFromBox();
 
     bleDeviceManager.registerNewMessageCallback(handleIncomingMessage);
-    // Set our flush callback.
     bleDeviceManager.onFlushReceived = _handleFlush;
     bleDeviceManager.onGenericReturn = _onGenericReturn;
+
+    bleDeviceManager.onListNodesReceived = (nodesList) {
+      List<int> nodeIDs = nodesList.map((n) {
+        if (n is int) return n;
+        return int.tryParse(n.toString()) ?? 0;
+      }).toList();
+      _meshNodes = nodeIDs;
+      notifyListeners();
+    };
 
     _startFlushTimer();
   }
@@ -84,16 +95,16 @@ class MessagesManager extends ChangeNotifier {
         }
       }
 
-      void onCmdError(String err) {
-        if (!completer.isCompleted) {
-          completer.completeError(err);
-        }
-      }
+      // void onCmdError(String err) {
+      //   if (!completer.isCompleted) {
+      //     completer.completeError(err);
+      //   }
+      // }
 
       // Store the expected success token and callbacks.
       _pendingSuccess = cmd.expectedSuccess;
       _pendingSuccessCallback = onCmdSuccess;
-      _pendingErrorCallback = onCmdError;
+      //_pendingErrorCallback = onCmdError;
 
       try {
         await completer.future;
@@ -112,7 +123,7 @@ class MessagesManager extends ChangeNotifier {
 
   String? _pendingSuccess;
   VoidCallback? _pendingSuccessCallback;
-  Function(String)? _pendingErrorCallback;
+  //Function(String)? _pendingErrorCallback;
 
   void _onGenericReturn(String value) {
     print("Generic return from device: $value");
@@ -121,7 +132,7 @@ class MessagesManager extends ChangeNotifier {
       _pendingSuccessCallback?.call();
       _pendingSuccess = null;
       _pendingSuccessCallback = null;
-      _pendingErrorCallback = null;
+      //_pendingErrorCallback = null;
     } else if (value == "msg.send.success") {
       // Even if we have no pending command (or it timed out), mark all pending messages
       // sent by the current device as confirmed.

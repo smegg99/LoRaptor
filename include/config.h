@@ -2,7 +2,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define DEBUG_MODE
+//#define DEBUG_MODE
 #ifdef DEBUG_MODE
 #include <Arduino.h>
 #define DEBUG_PRINT(x) Serial.print(x)
@@ -27,8 +27,8 @@
 #define MAX_RETRIES 5
 
 #define DEVICE_NAME "LoRaptor"
-#define PUBLIC_WORD "LORAPTOR"
 
+// https://pid.codes/1209/2077/
 #define DEVICE_VID 0x1209
 #define DEVICE_PID 0x2077
 
@@ -45,7 +45,7 @@
 #endif
 
 // Use for debugging, comment out for production
-// #define USE_SERIAL_COMM
+//#define USE_SERIAL_COMM
 #define SERIAL_BAUD_RATE 115200
 
 #define LORA_MISO 12
@@ -76,6 +76,7 @@
 #define MSG_SEND_SUCCESS "msg.send.success"
 
 #define FLUSHED_MESSAGES_RETURN_TYPE "type.flush.mess"
+#define LIST_NODES_RETURN_TYPE "type.list.nodes"
 #define NODE_ID_RETURN_TYPE "type.node.id"
 #define RTC_RETURN_TYPE "type.rtc"
 #define PING_RETURN_TYPE "type.ping"

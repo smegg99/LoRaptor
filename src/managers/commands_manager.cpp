@@ -184,15 +184,24 @@ void listConnectionsCallback(const Command& cmd) {
 		connectionsList.listValue.push_back(idValue);
 	}
 
-	listExecCmd.toOutputWithArgs({ {"v", connectionsList} });
+	returnExecCmd.toOutputWithArgs({ { "v", connectionsList } });
 }
 
 void listNodesCallback(const Command& cmd) {
 	CLIOutput* output = dispatcher.getOutput();
 	std::vector<std::uint16_t> nodes = meshManager.getConnectedNodes();
+	
+	Value nodesList;
+	nodesList.type = VAL_LIST;
+	
 	for (const uint16_t& node : nodes) {
-		output->println(std::to_string(node).c_str());
+		Value nodeValue;
+		nodeValue.type = VAL_STRING;
+		nodeValue.stringValue = std::to_string(node);
+		nodesList.listValue.push_back(nodeValue);
 	}
+	
+	returnExecCmd.toOutputWithArgs({ {"t", LIST_NODES_RETURN_TYPE}, { "v", nodesList } });
 }
 
 void helpCommandCallback(const Command& cmd) {
