@@ -1,0 +1,49 @@
+\subsection{Przebieg pracy}
+
+Pomysł stworzenia systemu niezależnej komunikacji LoRa pojawił się na początku 2024 roku jako odpowiedź na rosnące zapotrzebowanie na niezależne, bezpieczne i funkcjonalne rozwiązania komunikacyjne. Inspiracją były zarówno projekty open-source, jak i własne doświadczenia z pracy w terenie oraz zamiłowanie do mikrokontrolerów ESP32.
+
+Początkowo projekt istniał wyłącznie jako koncepcja. W połowie 2024 roku rozpoczęły się pierwsze konkretne działania:
+
+\subsection*{Faza I --- Eksperymenty i testy podstawowe}
+
+\begin{itemize}
+	\item Testy zasięgu modułów LoRa (RA-02) i wybór parametrów urządzenia.
+	\item Pierwsze połączenia ESP32 z LoRa za pomocą interfejsu SPI.
+	\item Próby z bibliotekami Arduino i eksperymenty z transmisją tekstu.
+\end{itemize}
+
+\subsection*{Faza II --- Budowa sprzętu}
+
+\begin{itemize}
+	\item Projekt i montaż płytki PCB z modułem ESP32-S3-MINI-1.
+	\item Zintegrowanie diody RGB i złącz USB-C.
+	\item Testy zasilania i eliminacja zakłóceń w komunikacji.
+\end{itemize}
+
+\clearpage
+\subsection*{Faza III --- Rozwój oprogramowania}
+
+\begin{itemize}
+	\item Stworzenie własnej biblioteki do obsługi wiersza poleceń --- RaptorCLI.
+	\item Wykorzystanie biblioteki LoRaMesher jako podstawy komunikacji mesh.
+	\item Opracowanie kompresji wiadomości za pomocą algorytmu SMAZ i szyfrowania AES (sprzętowe).
+	\item Integracja komunikacji BLE oraz USB CDC.
+\end{itemize}
+
+\subsection*{Faza IV --- Aplikacja mobilna}
+
+\begin{itemize}
+	\item Zaprojektowanie aplikacji RaptChat w języku Dart (Flutter).
+	\item Obsługa połączeń przez BLE i USB z widokiem czatu.
+	\item Testy interfejsu użytkownika i poprawa responsywności.
+\end{itemize}
+
+\subsection*{Faza V --- Integracja i testy końcowe}
+
+\begin{itemize}
+	\item Połączenie wszystkich modułów sprzętowych i programowych w spójną całość.
+	\item Testy funkcjonalne w warunkach zbliżonych do rzeczywistych.
+	\item Projekt i wydruk obudowy 3D z litofanem (oknem sygnalizacyjnym).
+\end{itemize}
+\smallskip
+Od pomysłu do wykonania minął ponad rok --- od pierwszych szkiców i prób z przewodami na płytce stykowej, aż po działające urządzenie w obudowie, gotowe do pracy w terenie. Dziś, w marcu 2025 roku, \textbf{LoRaptor} stanowi w pełni działający prototyp, który spełnia założone cele i może być dalej rozwijany.

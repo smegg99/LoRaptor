@@ -1,0 +1,93 @@
+\section{Część sprzętowa}
+
+Projekt \textbf{LoRaptor} wymagał stworzenia dedykowanej, kompaktowej i energooszczędnej platformy sprzętowej, która nie tylko umożliwi bezprzewodową komunikację dalekiego zasięgu, ale będzie również łatwa do integracji z urządzeniami końcowymi — smartfonami, komputerami czy innymi mikrokontrolerami. 
+
+Kluczowym elementem konstrukcji stała się zaprojektowana od podstaw płytka drukowana (PCB), zawierająca dwa główne moduły:
+\begin{itemize}
+	\item \textbf{ESP32-S3-MINI-1-N8} --- nowoczesny mikrokontroler firmy Espressif z obsługą BLE, Wi-Fi oraz USB-OTG, wyposażony w dużą moc obliczeniową i niskie zużycie energii.
+	\item \textbf{RA-02 LoRa} (AIThinker) --- wydajny moduł komunikacyjny oparty na technologii LoRa, pracujący na częstotliwości 433 MHz.
+\end{itemize}
+Oba moduły zostały połączone na jednej płytce, zaprojektowanej w środowisku \textbf{KiCad}, z myślą o maksymalnym wykorzystaniu przestrzeni i uproszczeniu produkcji.
+
+\clearpage
+\subsection{Projekt PCB i montaż komponentów}
+
+Projekt płytki przewiduje:
+\begin{itemize}
+	\item Port USB-C (męski i żeński) z obsługą komunikacji i zasilania;
+	\item Komunikację LoRa poprzez moduł RA-02;
+	\item Sygnalizację stanu pracy za pomocą diody RGB LTST-G563ZEGBW;
+	\item Przyciski BOOT i RESET dla konfiguracji systemu;
+	\item Zabezpieczenia przed ESD i przepięciami;
+	\item Filtrację zasilania z wykorzystaniem koralików ferrytowych i kondensatorów;
+	\item Do stabilizacji napięcia zastosowano układ LDI1117-3.3H, zapewniający niezawodne zasilanie 3.3V dla wszystkich komponentów.
+\end{itemize}
+
+Na płytce umieszczono również złącza szpilkowe (raster 1.27 mm) przeznaczone do programowania, debugowania oraz rozszerzeń funkcjonalnych (wyprowadzono niewykorzystane piny GPIO).
+
+\clearpage
+\subsection{Schemat elektroniczny}
+
+Poniżej znajduje się schemat elektryczny w wersji V1.0.0, przedstawiający pełne połączenia między komponentami, pinout ESP32, zasilanie i logikę sterowania.
+
+\begin{figure}[htbp]
+\centering
+	\includegraphics[width=\textwidth]{root/pcb_schematic.png}
+	\caption{Schemat elektroniczny płytki}
+\end{figure}
+
+\clearpage
+\begin{figure}[htbp]
+\centering
+	\includegraphics[width=0.8\textwidth]{root/pcb_layout.png}
+	\caption{Układ płytki}
+	\vspace{1cm}
+	\includegraphics[width=0.8\textwidth]{root/pcb_layout_bottom.png}
+	\caption{Układ płytki od spodu}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htbp]
+\centering
+	\includegraphics[width=0.9\textwidth]{root/pcb_render_top.png}
+	\caption{Widok 3D góry płytki}
+	\vspace{1cm}
+	\includegraphics[width=0.9\textwidth]{root/pcb_render_bottom.png}
+	\caption{Widok 3D spodu płytki}
+\end{figure}
+	
+\clearpage
+\subsection{Produkcja PCB}
+
+Płytka została wykonana w lutym 2025 roku w chińskiej firmie \textbf{JLCPCB} jako seria prototypowa. Zamówienie obejmowało:
+\begin{itemize}
+	\item 75 sztuk płytek (mała seria),
+	\item 1 szablon SMT do nakładania pasty lutowniczej,
+	\item całkowity koszt z wysyłką i opłatami: \textbf{\$59.77}.
+\end{itemize}
+Czas realizacji produkcji wynosił około 5-6 dni + dostawa UPS Express Saver.
+\begin{figure}[htbp]
+\centering
+	\includegraphics[width=0.9\textwidth]{root/pcb_order_screenshot.png}
+	\caption{Zamówienie produkcyjne w JLCPCB (75 płytek + stencil SMT)}
+\end{figure}
+
+\clearpage
+\subsection{Lista elementów (BOM)}
+
+Pełna lista elementów zastosowanych na płytce znajduje się poniżej. Wszystkie komponenty dobrano tak, aby zapewnić kompatybilność z montażem SMT oraz łatwość ręcznego lutowania.
+
+Zastosowano popularne obudowy SMD (0805 / 1206) i sprawdzone układy o dobrej dostępności.
+
+\begin{itemize}
+	\item \textbf{ESP32-S3-MINI-1-N8} — główny mikrokontroler z BLE, Wi-Fi i USB;
+	\item \textbf{RA-02 LoRa} — moduł komunikacji 433 MHz z anteną (Aliexpress, ok. 15 zł / szt.);
+	\item \textbf{LTST-G563ZEGBW} — dioda RGB LED;
+	\item \textbf{1825910-6} — przyciski BOOT i RESET;
+	\item \textbf{LDI1117-3.3H} — stabilizator napięcia 3.3V;
+	\item \textbf{SMF5.0A}, \textbf{PESD5V0S1UB.115}, \textbf{BAT60A} — zabezpieczenia ESD i przepięciowe;
+	\item \textbf{MF-MSMF110} — bezpiecznik polimerowy;
+	\item \textbf{USB-C (żeńskie)} — generyczne złącza zakupione na Aliexpress (nierekomendowane do finalnej produkcji, ale wystarczające do prototypów);
+	\item Rezystory i kondensatory (5.1kΩ, 10kΩ, 68Ω, 10Ω, 100nF, 10uF, 47uF) – standardowe elementy pasywne SMD;
+\end{itemize}
