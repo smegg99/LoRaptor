@@ -1,0 +1,6 @@
+\selectlanguage *{polish}
+\contentsline {section}{\numberline {1}Wprowadzenie}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Czym jest LoRaptor?}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Cele, założenia i zastosowania}{3}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Off the grid, on the mesh – co to znaczy?}{4}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Przebieg pracy}{5}{subsection.1.4}%

@@ -1,0 +1,93 @@
+\documentclass[12pt,oneside,a4paper]{article}
+
+% === Language and Font ===
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{polish}
+\setotherlanguage{english}
+\setmainfont{DejaVu Serif}
+
+% === Layout and Formatting ===
+\usepackage[margin=2.25cm,headheight=26pt,includeheadfoot]{geometry}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage{matlab-prettifier}
+\usepackage{caption}
+\usepackage{tocloft}
+\usepackage{setspace}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{comment}
+\usepackage{booktabs}
+\usepackage{indentfirst}
+\usepackage{lscape}
+\usepackage[flushleft]{threeparttable}
+\usepackage{nomencl}
+\usepackage{lastpage}
+\usepackage{datetime2}
+\usepackage[most]{tcolorbox}
+
+\title{Dokumentacja techniczna projektu "LoRaptor"}
+\makeatletter\let\Title\@title\makeatother
+
+\lstset{
+  language=Matlab,
+  style=Matlab-editor,
+  basicstyle=\normalsize\mlttfamily,
+  numbers=left,
+  numberstyle={\scriptsize\color{black}},
+  numbersep=0.5cm
+}
+
+\newlist{steps}{enumerate}{1}
+\setlist[steps, 1]{leftmargin=1.5cm,label = Step \arabic*:}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\Title}
+\rhead{}
+\cfoot{\thepage}
+\rfoot{\includegraphics[height=1cm]{root/LoRaptorHeader.png}}
+
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+\setlength{\parindent}{2em}
+\setlength\headheight{26pt}
+\setlength{\footskip}{50pt}
+
+\begin{document}
+
+\pagenumbering{roman}
+\input{sources/0_front_page.tex}
+
+\newpage
+\tableofcontents
+
+\newpage
+\pagenumbering{arabic}
+\doublespacing
+
+\input{sources/1_introduction.tex}
+\clearpage
+\input{sources/1.1_what_is.tex}
+\clearpage
+\input{sources/1.2_purpose.tex}
+\clearpage
+\input{sources/1.3_catchphrase.tex}
+\clearpage
+\input{sources/2_hardware_overview.tex}
+\clearpage
+
+\label{EndOfText}
+\fancyfoot[C]{Strona \thepage\ z \pageref{LastPage}}
+
+\label{endOfDoc}
+\label{LastPage}
+\end{document}
