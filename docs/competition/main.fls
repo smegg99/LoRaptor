@@ -1556,6 +1556,12 @@ INPUT root/litophane_test.jpg
 INPUT ./root/LoRaptorHeader.png
 INPUT ./root/LoRaptorHeader.png
 INPUT root/LoRaptorHeader.png
+INPUT ./root/pid_code.png
+INPUT ./root/pid_code.png
+INPUT root/pid_code.png
+INPUT ./root/LoRaptorHeader.png
+INPUT ./root/LoRaptorHeader.png
+INPUT root/LoRaptorHeader.png
 INPUT ./root/LoRaptorHeader.png
 INPUT ./root/LoRaptorHeader.png
 INPUT root/LoRaptorHeader.png
@@ -1613,9 +1619,6 @@ INPUT root/LoRaptorHeader.png
 INPUT ./root/help_cmd.png
 INPUT ./root/help_cmd.png
 INPUT root/help_cmd.png
-INPUT ./root/LoRaptorHeader.png
-INPUT ./root/LoRaptorHeader.png
-INPUT root/LoRaptorHeader.png
 INPUT ./root/LoRaptorHeader.png
 INPUT ./root/LoRaptorHeader.png
 INPUT root/LoRaptorHeader.png

@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999994 (TeX Live 2022/Debian) (preloaded format=xelatex 2025.3.21)  23 MAR 2025 22:45
+This is XeTeX, Version 3.141592653-2.6-0.999994 (TeX Live 2022/Debian) (preloaded format=xelatex 2025.3.21)  23 MAR 2025 23:17
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1283,15 +1283,27 @@ File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
  [26
 
+]
+File: root/pid_code.png Graphic file (type bmp)
+<root/pid_code.png>
+
+Underfull \hbox (badness 1242) in paragraph at lines 133--133
+[]\TU/DejaVuSerif(0)/m/n/12 Rysunek 24: |Zrzut ekranu z przydzielonym kodem produktu na stronie
+ []
+
+File: root/LoRaptorHeader.png Graphic file (type bmp)
+<root/LoRaptorHeader.png>
+[27
+
 ])
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [27
+ [28
 
 ] (./sources/firmware_overview.tex
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [28
+ [29
 
 ]
 Overfull \hbox (11.9592pt too wide) in paragraph at lines 19--20
@@ -1305,12 +1317,12 @@ Overfull \hbox (1.28342pt too wide) in paragraph at lines 20--21
 
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
-[29
+[30
 
 ]
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [30
+ [31
 
 ]
 Overfull \hbox (1.86009pt too wide) in paragraph at lines 48--49
@@ -1319,7 +1331,7 @@ Overfull \hbox (1.86009pt too wide) in paragraph at lines 48--49
 
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
-[31
+[32
 
 ] (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2020/03/24 1.8d listings language file
@@ -1330,7 +1342,7 @@ File: lstmisc.sty 2020/03/24 1.8d (Carsten Heinz)
 )
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [32
+ [33
 
 ]
 Overfull \hbox (1.36087pt too wide) in paragraph at lines 110--111
@@ -1339,10 +1351,10 @@ Overfull \hbox (1.36087pt too wide) in paragraph at lines 110--111
 
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
-[33]
+[34]
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [34
+ [35
 
 ]
 Overfull \hbox (3.37717pt too wide) in paragraph at lines 149--150
@@ -1351,7 +1363,7 @@ Overfull \hbox (3.37717pt too wide) in paragraph at lines 149--150
 
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
-[35
+[36
 
 ] (/usr/share/texlive/texmf-dist/tex/latex/listings/lstlang1.sty
 File: lstlang1.sty 2020/03/24 1.8d listings language file
@@ -1360,23 +1372,23 @@ File: lstlang1.sty 2020/03/24 1.8d listings language file
 )
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [36
+ [37
 
 ]
 File: root/help_cmd.png Graphic file (type bmp)
 <root/help_cmd.png>
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [37]
+ [38]
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [38
+ [39
 
 
 ]
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
- [39
+ [40
 
 ]
 Overfull \hbox (24.5245pt too wide) in paragraph at lines 238--239
@@ -1385,12 +1397,7 @@ Overfull \hbox (24.5245pt too wide) in paragraph at lines 238--239
 
 File: root/LoRaptorHeader.png Graphic file (type bmp)
 <root/LoRaptorHeader.png>
-[40
-
-]
-File: root/LoRaptorHeader.png Graphic file (type bmp)
-<root/LoRaptorHeader.png>
- [41
+[41
 
 ])
 File: root/LoRaptorHeader.png Graphic file (type bmp)
@@ -1442,14 +1449,14 @@ File: root/raptchat_devices.png Graphic file (type bmp)
 <root/raptchat_devices.png>
 
 Underfull \hbox (badness 1253) in paragraph at lines 134--134
-[]\TU/DejaVuSerif(0)/m/n/12 Rysunek 31: |Widok urządzeń ze
+[]\TU/DejaVuSerif(0)/m/n/12 Rysunek 32: |Widok urządzeń ze
  []
 
 File: root/raptchat_my_device.png Graphic file (type bmp)
 <root/raptchat_my_device.png>
 
 Underfull \hbox (badness 7631) in paragraph at lines 140--140
-[]\TU/DejaVuSerif(0)/m/n/12 Rysunek 32: |Szczegóły mojego
+[]\TU/DejaVuSerif(0)/m/n/12 Rysunek 33: |Szczegóły mojego
  []
 
 File: root/LoRaptorHeader.png Graphic file (type bmp)
@@ -1646,10 +1653,10 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: 80716E8F40C8F7D41F37946B9E538348;8392.
  ) 
 Here is how much of TeX's memory you used:
- 37725 strings out of 476775
- 822126 string characters out of 5808212
- 1928991 words of memory out of 5000000
- 57182 multiletter control sequences out of 15000+600000
+ 37733 strings out of 476775
+ 822292 string characters out of 5808212
+ 1927991 words of memory out of 5000000
+ 57189 multiletter control sequences out of 15000+600000
  516892 words of font info for 71 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
  110i,11n,118p,739b,1237s stack positions out of 10000i,1000n,20000p,200000b,200000s
