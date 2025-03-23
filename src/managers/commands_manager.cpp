@@ -176,7 +176,7 @@ void listConnectionsCallback(const Command& cmd) {
 
 	Value connectionsList;
 	connectionsList.type = VAL_LIST;
-
+	
 	for (const Connection* conn : connections) {
 		Value idValue;
 		idValue.type = VAL_STRING;

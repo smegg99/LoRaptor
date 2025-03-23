@@ -1,0 +1,204 @@
+\subsection{Aplikacja RaptChat}
+
+RaptChat to mobilna aplikacja napisana w języku \textbf{Dart} z użyciem frameworka \textbf{Flutter}, przeznaczona do zarządzania urządzeniem LoRaptor i prowadzenia bezprzewodowej komunikacji tekstowej za pośrednictwem sieci mesh. Aplikacja umożliwia użytkownikowi:
+
+\begin{itemize}
+	\item wyszukiwanie i łączenie się z urządzeniami LoRaptor przez BLE (Bluetooth Low Energy),
+	\item konfigurację połączeń,
+	\item wysyłanie oraz odbieranie wiadomości,
+	\item wizualizację aktualnych węzłów w sieci,
+	\item zarządzanie lokalnymi ustawieniami i urządzeniami.
+\end{itemize}
+
+\vspace{1cm}
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{root/app_logo_1.png}
+        \caption{Główne logo RaptChat}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{root/app_logo_2.png}
+        \caption{Alt. logo RaptChat}
+    \end{minipage}
+\end{figure}
+
+\clearpage
+\subsubsection{Architektura działania}
+
+Aplikacja łączy się z urządzeniem za pomocą profilu \textbf{NUS (Nordic UART Service)}, który zapewnia kanał tekstowej komunikacji BLE. Dane przesyłane przez aplikację są komendami w formacie zdefiniowanym przez bibliotekę \texttt{RaptorCLI}. Aplikacja posiada własny parser CLI (dispatcher), który umożliwia zrozumienie odpowiedzi urządzenia i podejmowanie akcji na podstawie ich typu.
+
+\clearpage
+\subsubsection{Komunikacja z urządzeniem}
+
+\begin{itemize}
+	\item Komendy są wysyłane tekstowo, np.:
+		\begin{lstlisting}
+send -id "test123" -m "Czesc!"
+		\end{lstlisting}
+	\item Odpowiedzi są przetwarzane w czasie rzeczywistym i klasyfikowane według ich typu, do przykładowych typów należą:
+		\begin{itemize}
+			\item \texttt{msg.send.success} --- potwierdzenie wysłania wiadomości,
+			\item \texttt{msg.conn.created} --- potwierdzenie utworzenia połączenia,
+			\item \texttt{type.flush.mess} --- wiadomości odebrane z sieci,
+			\item \texttt{type.list.nodes} --- lista aktualnie znanych węzłów mesh.
+		\end{itemize}
+\end{itemize}
+
+\subsubsection{Warstwa BLE}
+
+Za zarządzanie połączeniem Bluetooth odpowiada klasa \texttt{BleDeviceManager}. Obsługuje ona:
+\begin{itemize}
+	\item skanowanie i filtrowanie urządzeń LoRaptor,
+	\item parowanie, łączenie i rozłączanie urządzeń,
+	\item inicjalizację kanału komunikacji NUS,
+	\item konfigurację początkową urządzenia (RTC, połączenia itp.).,
+	\item przesyłanie i odbieranie komend.
+\end{itemize}
+
+\clearpage
+\subsubsection{Automatyzacja konfiguracji}
+
+Po każdym połączeniu z urządzeniem aplikacja wykonuje tzw. komendy startowe:
+\begin{enumerate}
+	\item Ustawienie czasu RTC na podstawie zegara telefonu:
+		\begin{lstlisting}
+set rtc -t 1711000000
+		\end{lstlisting}
+	\item Odtworzenie wcześniej zapisanych połączeń i ich odbiorców:
+		\begin{lstlisting}
+create connection -id "test" -k "key1234" -r [53052, 16888]
+		\end{lstlisting}
+\end{enumerate}
+
+\subsubsection{Warstwa wiadomości}
+
+Logiką wiadomości zarządza \texttt{MessagesManager}, który:
+\begin{itemize}
+	\item zarządza wysyłaniem wiadomości i kolejką poleceń,
+	\item cyklicznie odpytuje urządzenie o nowe wiadomości (komenda \texttt{flush}),
+	\item aktualizuje interfejs użytkownika po nadejściu nowych danych.
+\end{itemize}
+
+\subsubsection{Interfejs użytkownika}
+
+Aplikacja składa się z kilku ekranów:
+\begin{itemize}
+	\item \textbf{Ekran główny} — lista zapisanych połączeń i dostęp do funkcji czatu.
+	\item \textbf{Czat} — dwukierunkowa komunikacja tekstowa z danym połączeniem.
+	\item \textbf{Mapa sieci} — wizualizacja połączonych węzłów mesh.
+	\item \textbf{Edycja połączenia} — konfiguracja ID, klucza prywatnego i listy odbiorców.
+	\item \textbf{Ustawienia} — język aplikacji, motyw kolorystyczny itp.
+\end{itemize}
+
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_home_dark.png}
+		\caption{Ekran główny (tryb ciemny)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_home.png}
+		\caption{Ekran główny (tryb jasny)}
+	\end{minipage}
+\end{figure}
+
+\clearpage
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_settings.png}
+		\caption{Panel ustawień}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_devices_alt.png}
+		\caption{Widok urządzeń}
+	\end{minipage}
+\end{figure}
+
+\clearpage
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_devices.png}
+		\caption{Widok urządzeń ze sparowanym LoRaptorem}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_my_device.png}
+		\caption{Szczegóły mojego urządzenia}
+	\end{minipage}
+\end{figure}
+
+\clearpage
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_edit_connection.png}
+		\caption{Tworzenie nowego połączenia}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_edit_connection_completed.png}
+		\caption{Uzupełnione dane połączenia}
+	\end{minipage}
+\end{figure}
+
+\clearpage
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_chats_home.png}
+		\caption{Lista aktywnych czatów}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_empty_chat.png}
+		\caption{Pusty czat (nowa konwersacja)}
+	\end{minipage}
+\end{figure}
+
+\clearpage
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_chat_2.png}
+		\caption{Konwersacja tekstowa (przykład 1)}
+	\end{minipage}
+	\hfill
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_chat.png}
+		\caption{Konwersacja tekstowa (przykład 2)}
+	\end{minipage}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/raptchat_qr.png}
+		\caption{Kod QR do szybkiego dodania połączenia}
+	\end{minipage}
+\end{figure}
+
+\clearpage
+\subsubsection{Podsumowanie}
+
+RaptChat stanowi wygodny interfejs do zarządzania LoRaptorem, bez potrzeby używania terminala lub pisania skryptów. Dzięki rozbudowanej warstwie CLI wbudowanej w urządzenie, aplikacja zyskuje elastyczność, a użytkownik ma pełną kontrolę nad siecią i komunikacją.

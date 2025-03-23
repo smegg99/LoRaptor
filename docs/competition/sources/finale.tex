@@ -1,0 +1,92 @@
+\section{Zalety i korzyści naszego rozwiązania}
+
+LoRaptor to nowoczesny system komunikacji bezprzewodowej, działający \textit{``off the grid''} --- poza zasięgiem tradycyjnych sieci, a jednocześnie \textit{``on the mesh''}, tworząc własną, odporną strukturę komunikacyjną. Główne korzyści to:
+
+\begin{itemize}
+	\item \textbf{Zwiększone bezpieczeństwo:} Funkcjonowanie poza standardowymi sieciami Wi-Fi i GSM redukuje ryzyko awarii i cyberataków. System implementuje zaawansowane szyfrowanie AES-128 oraz efektywną kompresję danych.
+		
+	\item \textbf{Autonomiczność:} Skuteczne działanie w ekstremalnych warunkach środowiskowych — rozwiązanie dedykowane służbom ratunkowym, eksploratorom, jednostkom wojskowym i praktykom sztuki przetrwania.
+		
+	\item \textbf{Przyjazność użytkownikowi:} Bezproblemowa konfiguracja i zarządzanie poprzez dedykowaną aplikację RaptChat oraz zaawansowaną bibliotekę RaptorCLI.
+		
+	\item \textbf{Modułowość:} Zarówno komponenty sprzętowe, jak i oprogramowanie zaprojektowano z myślą o łatwej integracji z rozwiązaniami zewnętrznymi.
+		
+	\item \textbf{Przenośność:} Kompaktowa, odporna konstrukcja z wbudowanym litofanem oraz uniwersalnym portem USB-C zapewnia wygodę transportu i instalacji w różnorodnych lokalizacjach.
+\end{itemize}
+
+\clearpage
+\section{Konkurencyjność}
+
+LoRaptor wyróżnia się na tle istniejących rozwiązań dzięki unikalnemu połączeniu funkcji komunikacyjnych, energooszczędności i dostępności open-source. Podczas gdy inne systemy mesh są często ograniczone do zamkniętych ekosystemów (np. komercyjne sieci LoRaWAN), LoRaptor oferuje:
+
+\begin{itemize}
+	\item \textbf{Brak opłat licencyjnych} --- urządzenie działa bez potrzeby rejestracji w sieciach operatorów lub wykupywania planów taryfowych;
+	
+	\item \textbf{Pełna kontrola nad urządzeniem} --- użytkownik ma dostęp do firmware'u, może go modyfikować, rozszerzać, tworzyć własne komendy i funkcje;
+	
+	\item \textbf{Wieloplatformowość} --- dzięki BLE, USB i wsparciu dla różnych systemów (Android, Windows, Linux), LoRaptor integruje się z szeroką gamą sprzętów;
+	
+	\item \textbf{Niższy koszt produkcji jednostkowej} --- szacowany koszt jednej jednostki (ok. 10--11 USD) pozwala wdrożyć system nawet przy ograniczonym budżecie, co daje przewagę nad droższymi, zamkniętymi urządzeniami;
+	
+	\item \textbf{Zaawansowana technologia w prostym opakowaniu} --- LoRaptor łączy mikrokontroler ESP32-S3-MINI, mesh LoRa, szyfrowanie i CLI w jednym, przemyślanym projekcie.
+\end{itemize}
+
+\clearpage
+\section{Innowacyjność}
+
+Innowacyjność LoRaptora przejawia się nie tylko w jego funkcjach, ale także w podejściu do projektowania i rozwoju technologii:
+
+\begin{description}
+	\item[Autorska biblioteka RaptorCLI]
+	Umożliwia tworzenie złożonych komend i interakcji tekstowych z urządzeniem w sposób przypominający klasyczne terminale systemów operacyjnych. To pozwala na elastyczne sterowanie urządzeniem bez konieczności pisania kodu.
+	
+	\item[Zastosowanie algorytmu SMAZ]
+	Do kompresji danych oraz AES-128 do szyfrowania --- co w połączeniu daje wydajny i bezpieczny kanał komunikacji nawet przy ograniczonej przepustowości LoRa.
+	
+	\item[Zautomatyzowana konfiguracja]
+	Przez aplikację mobilną --- użytkownik nie musi znać poleceń CLI ani procesów konfiguracyjnych. RaptChat przeprowadza je automatycznie, ustawiając czas, przywracając połączenia i wczytując konfiguracje.
+	
+	\item[Warstwa litofanowa w obudowie]
+	Zintegrowana z diodą RGB --- to przykład połączenia estetyki z funkcjonalnością, gdzie design obudowy pełni również funkcję sygnalizacyjną.
+	
+	\item[Modularność i otwarta architektura]
+	Zarówno sprzęt, jak i kod źródłowy pozwalają na łatwe modyfikacje, co sprzyja innowacjom i wykorzystaniu w innych dziedzinach.
+\end{description}
+
+\clearpage
+\section{Plany na przyszłość}
+
+Projekt LoRaptor, choć obecnie w fazie w pełni funkcjonalnego prototypu, ma ambitne cele rozwojowe. Wśród planowanych kierunków rozwoju znajdują się:
+
+\begin{description}
+	\item[Wersja terenowa z ekologicznym zasilaniem]
+	Ulepszona wersja z rozszerzoną pamięcią, modułem GPS oraz hybrydowym systemem zasilania (bateria + panel solarny), wykorzystująca rozwiązania energooszczędne z odnawialnymi źródłami energii, dostosowana do pracy w warunkach ekstremalnych i zapewniająca długotrwałą autonomię w terenie.
+	
+	\item[Rozbudowa aplikacji RaptChat]
+	Zaawansowane funkcje: mapa z geolokalizacją węzłów, wizualizacja aktywności sieci w czasie rzeczywistym, eksport i analiza danych komunikacyjnych.
+	
+	\item[Integracja z sieciami satelitarnymi] 
+	Rozszerzenie zasięgu systemu poprzez integrację z konstelacjami satelitów LEO, umożliwiające komunikację globalną w obszarach pozbawionych jakiejkolwiek infrastruktury naziemnej.
+	
+	\item[Zastosowania humanitarne]
+	Adaptacja systemu do użytku w strefach konfliktów i katastrof naturalnych, ze szczególnym uwzględnieniem potrzeb komunikacyjnych w regionach dotkniętych działaniami wojennymi (np. Ukraina), zapewniająca niezależną i bezpieczną łączność dla służb ratunkowych i ludności cywilnej.
+	
+	\item[Certyfikacja sprzętowa]
+	Uzyskanie profesjonalnych certyfikatów bezpieczeństwa i niezawodności (IP67, MIL-STD-810G), umożliwiających wdrożenia w sektorach profesjonalnych: służbach ratunkowych, jednostkach wojskowych, logistyce terenowej oraz infrastrukturze krytycznej.
+\end{description}
+
+\section{Gdzie nas można znaleźć?}
+
+\textbf{Repozytorium kodu:} \url{https://github.com/smegg99/LoRaptor}
+
+\begin{figure}[H]
+	\centering
+	\begin{minipage}[b]{0.45\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{root/repo_qr.png}
+	\end{minipage}
+\end{figure}
+
+\begin{center}
+	\emph{LoRaptor nie kończy się na prototypie --- to fundament pod dynamiczny i otwarty ekosystem przyszłościowej komunikacji.}
+\end{center}

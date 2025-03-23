@@ -33,6 +33,11 @@
 \usepackage{lastpage}
 \usepackage{datetime2}
 \usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\usepackage{listings}
+
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{commentgreen}{rgb}{0,0.6,0}
 
 \title{Dokumentacja techniczna projektu "LoRaptor"}
 \makeatletter\let\Title\@title\makeatother
@@ -44,6 +49,19 @@
   numbers=left,
   numberstyle={\scriptsize\color{black}},
   numbersep=0.5cm
+}
+
+\lstset{
+  backgroundcolor=\color{codegray},
+  commentstyle=\color{commentgreen},
+  keywordstyle=\color{blue},
+  stringstyle=\color{orange},
+  basicstyle=\ttfamily\small,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  tabsize=2,
+  breaklines=true
 }
 
 \newlist{steps}{enumerate}{1}
@@ -87,6 +105,12 @@
 \input{sources/hardware_overview.tex}
 \clearpage
 \input{sources/enclosure.tex}
+\clearpage
+\input{sources/firmware_overview.tex}
+\clearpage
+\input{sources/app_overview.tex}
+\clearpage
+\input{sources/finale.tex}
 \clearpage
 
 \label{EndOfText}

@@ -1,0 +1,271 @@
+\section{Część programowa}
+
+\subsection{Biblioteka LoRaMesher}
+
+Aby zapewnić pełną funkcjonalność komunikacji typu mesh w projekcie \textbf{LoRaptor}, wykorzystano otwartoźródłową bibliotekę LoRaMesher. Biblioteka ta umożliwia tworzenie zdecentralizowanej sieci, w której urządzenia komunikują się bezpośrednio między sobą, bez potrzeby istnienia centralnego węzła, jakim w klasycznych systemach LoRaWAN jest bramka.
+
+\subsubsection{Czym jest LoRaMesher?}
+
+\textbf{LoRaMesher} to biblioteka w języku C++ implementująca proaktywny protokół routingu oparty na tablicach odległości (distance-vector). Pozwala ona urządzeniom tworzyć samodzielnie organizującą się sieć mesh, w której pakiety danych są przekazywane między węzłami aż do miejsca docelowego.
+
+Dzięki integracji z biblioteką \textbf{RadioLib}, \textbf{LoRaMesher} umożliwia obsługę komunikacji LoRa, wykrywanie pakietów przez przerwania oraz automatyczne zarządzanie czasem antenowym i unikaniem kolizji.
+
+\clearpage
+\subsubsection{Struktura wiadomości i komunikacja}
+
+Każda wiadomość przesyłana w sieci składa się z nagłówka (header) i ładunku danych (payload). Nagłówek zawiera informacje takie jak adres źródłowy i docelowy, typ wiadomości oraz rozmiar danych. W sieci występują dwa rodzaje wiadomości:
+
+\begin{itemize}
+	\item \textbf{Wiadomości routujące (routing messages)} — wysyłane cyklicznie przez każdy węzeł w celu aktualizacji lokalnych tablic routingu.
+	\item \textbf{Wiadomości danych (data messages)} — zawierają właściwe dane użytkownika przesyłane do określonego węzła.
+\end{itemize}
+
+Routing w sieci odbywa się w pełni automatycznie. Węzły analizują wiadomości routujące sąsiadów i budują na ich podstawie optymalne trasy do pozostałych urządzeń. Gdy nadejdzie wiadomość danych, węzeł może ją odebrać (jeśli jest adresatem), przekazać dalej (jeśli jest kolejnym ogniwem trasy), albo odrzucić (jeśli pakiet go nie dotyczy).
+
+\clearpage
+\subsubsection{Architektura zadań i kolejek}
+
+\textbf{LoRaMesher} działa w środowisku \textbf{FreeRTOS} i opiera się na szeregu zadań (tasks) oraz kolejek pakietów (queues), które zarządzają cyklem życia wiadomości:
+
+\begin{itemize}
+	\item \textbf{Q\_RP (Received Packets)} — odbierane pakiety oczekujące na przetworzenie.
+	\item \textbf{Q\_SP (Send Packets)} — kolejka pakietów do wysłania.
+	\item \textbf{Q\_URP (User Received Packets)} — dane przeznaczone do aplikacji użytkownika.
+\end{itemize}
+Zadania odpowiedzialne za pracę sieci to m.in.:
+\begin{itemize}
+	\item \textbf{Receive Task} — odbiera pakiety przez LoRa i przekazuje je do przetwarzania.
+	\item \textbf{Send Task} — wysyła pakiety z kolejki Q\_SP, z uwzględnieniem cyklu obowiązkowej przerwy (duty cycle) i sprawdzania dostępności kanału (CAD).
+	\item \textbf{Routing Protocol Task} — cyklicznie wysyła wiadomości routujące do sąsiadów.
+	\item \textbf{Process Task} — analizuje pakiety z Q\_RP i decyduje, co dalej z nimi zrobić.
+	\item \textbf{User Send Task} — interfejs programistyczny aplikacji użytkownika do wysyłania danych.
+	\item \textbf{User Receive Task} — odbiór danych przez aplikację użytkownika.
+\end{itemize}
+
+\clearpage
+\subsubsection{Abstrakcja danych i integracja w LoRaptorze}
+
+LoRaptor, poza implementacją sieci typu mesh opartej na bibliotece \texttt{LoRaMesher}, wprowadza własną warstwę abstrakcji dla danych użytkownika. Każda wiadomość przesyłana przez siatkę LoRa nie jest przesyłana jako surowy tekst, lecz jako specjalnie przygotowany obiekt klasy \texttt{Payload}. Celem tego podejścia jest zapewnienie:
+
+\begin{itemize}
+	\item struktury danych możliwej do rozbudowy,
+	\item kompresji dla oszczędności przepustowości,
+	\item szyfrowania dla bezpieczeństwa transmisji.
+\end{itemize}
+
+\subsubsection{Format danych Payload}
+
+Każdy obiekt typu \texttt{Payload} zawiera następujące informacje:
+\begin{itemize}
+	\item \textbf{publicWord} – hasło rozpoznawcze, np. identyfikator połączenia,
+	\item \textbf{epoch} – znacznik czasu wysyłki (UNIX timestamp),
+	\item \textbf{type} – typ danych,
+	\item \textbf{content} – właściwa treść wiadomości.
+\end{itemize}
+
+Te dane są najpierw łączone w jeden ciąg znaków, a następnie:
+\begin{enumerate}
+	\item \textbf{kompresowane} przy użyciu algorytmu \texttt{Smaz2} — zoptymalizowanego pod krótkie wiadomości tekstowe,
+	\item \textbf{szyfrowane} przy użyciu AES-128 w trybie CBC,
+	\item \textbf{kodowane} w base64 w celu przesyłania przez kanały tekstowe.
+\end{enumerate}
+
+\clearpage
+\subsubsection{Wysyłanie danych przez LoRaMesher}
+
+Tak przygotowany zaszyfrowany i skompresowany ciąg znaków jest przekazywany do biblioteki \texttt{LoRaMesher} jako zawartość wiadomości:
+
+\begin{lstlisting}[language=C++]
+// Przyklad tworzenia wiadomosci
+Payload payload("conn01", epochTime, "Hello world!", PayloadType::MESSAGE);
+std::string encoded;
+if (payload.encode(connectionKey, encoded)) {
+    Message outgoingMsg(encoded, epoch, localNodeID, PayloadType::MESSAGE);
+    // ... wysylka przez LoRaMesher
+}
+\end{lstlisting}
+
+\subsubsection{Dekodowanie po stronie odbiorcy}
+
+Po odebraniu wiadomości, urządzenie wykonuje operację odwrotną:
+\begin{enumerate}
+	\item Odszyfrowanie danych przy pomocy klucza połączenia,
+	\item Dekompresję,
+	\item Parsowanie pól \texttt{publicWord}, \texttt{epoch}, \texttt{type} i \texttt{content}.
+\end{enumerate}
+Wszystko to realizowane jest metodą:
+\begin{lstlisting}[language=C++]
+Payload decoded;
+if (Payload::decode(receivedEncryptedMsg, connectionKey, decoded)) {
+    std::string msgContent = decoded.getContent();
+    // obsluga wiadomosci
+}
+\end{lstlisting}
+
+\subsubsection{Korzyści projektowe}
+
+Takie podejście zapewnia:
+\begin{itemize}
+	\item \textbf{Rozdzielenie warstwy transmisji od warstwy danych}, co pozwala łatwo zmienić medium komunikacji (LoRa, Wi-Fi, BLE).
+	\item \textbf{Bezpieczeństwo}, ponieważ dane są szyfrowane symetrycznie (AES-128).
+	\item \textbf{Wydajność}, dzięki zastosowaniu lekkiego algorytmu kompresji.
+	\item \textbf{Elastyczność}, ponieważ strukturę danych można łatwo rozszerzać o dodatkowe pola.
+\end{itemize}
+
+\subsubsection{Podsumowanie}
+
+Klasa \texttt{Payload} działa jako inteligentna warstwa pośrednia pomiędzy logiką aplikacyjną a siecią LoRaMesher. To rozwiązanie nie tylko porządkuje przesyłane dane, ale również zabezpiecza je i optymalizuje pod kątem transmisji w sieci o niskiej przepustowości, jaką jest LoRa.
+
+\clearpage
+\subsection{Biblioteka RaptorCLI}
+
+\textbf{RaptorCLI} to autorska biblioteka służąca do definiowania, parsowania i wykonywania poleceń tekstowych w systemach wbudowanych. Powstała jako moduł firmware'u LoRaptor, umożliwiając użytkownikowi interakcję z urządzeniem poprzez USB (Serial) lub BLE (Bluetooth Low Energy), w stylu przypominającym klasyczne powłoki terminalowe, takie jak \textbf{Bash}.
+
+\subsubsection{Architektura i integracja}
+
+Biblioteka oparta jest na architekturze komend i dispatcherów. W firmware LoRaptor odpowiada za przyjmowanie poleceń (tekstowych stringów), parsowanie ich oraz wywoływanie odpowiednich callbacków z argumentami.
+
+Polecenia przyjmowane są jednym z dwóch kanałów:
+\begin{itemize}
+	\item \textbf{USB Serial} --- z wykorzystaniem klasy \textbf{SerialComm},
+	\item \textbf{BLE NUS} --- z wykorzystaniem klasy \textbf{BLEComm} (Nordic UART Service).
+\end{itemize}
+
+Każde polecenie trafia do centralnej kolejki \textbf{commandQueue} i jest przetwarzane w osobnym zadaniu systemu FreeRTOS:
+
+\begin{lstlisting}[language=C++]
+xTaskCreate(commandProcessingTask, "CommandProcessingTask", 32768, NULL, 1, NULL);
+\end{lstlisting}
+
+\textbf{Dispatcher} i \textbf{CLIOutput} zapewniają przekierowanie komend jak i komunikatów zwrotnych do odpowiedniego kanału (BLE lub Serial).
+
+\clearpage
+\subsubsection{Połączenia --- czym one są?}
+
+\textbf{Połączenia} (ang. \textit{connections}) w systemie LoRaptor stanowią abstrakcję kanałów komunikacyjnych pomiędzy węzłami sieci. Każde połączenie jest definiowane przez:
+
+\begin{itemize}
+	\item \textbf{Unikalny identyfikator} --- rozpoznawalny wewnątrz urządzenia string identyfikujący konkretne połączenie
+	\item \textbf{Klucz kryptograficzny} --- używany do szyfrowania i deszyfrowania transmisji
+	\item \textbf{Lista odbiorców} --- zbiór adresów węzłów sieci, do których kierowane są wiadomości
+\end{itemize}
+
+Z perspektywy użytkownika, połączenia można porównać do „kanałów komunikacyjnych" lub „czatów grupowych". Każde połączenie ma swoją nazwę (identyfikator), własny klucz zabezpieczający wymianę informacji oraz listę uczestników, którzy mogą odbierać i wysyłać wiadomości. Dzięki interfejsowi \textbf{RaptorCLI}, użytkownik może w prosty sposób tworzyć nowe kanały komunikacyjne, dołączać do nich inne urządzenia oraz wysyłać i odbierać wiadomości --- wszystko za pomocą prostych poleceń tekstowych, bez potrzeby zagłębiania się w techniczne szczegóły działania sieci.
+
+\clearpage
+\subsubsection{Przykładowe polecenia}
+
+\textbf{RaptorCLI} obsługuje komendy z argumentami, aliasami oraz typowaniem argumentów. Oto przykłady:
+\vspace{0.3cm}
+Utworzenie połączenia:
+\begin{lstlisting}[language=bash]
+create connection -id "test" -k "secretKey123" -r [53052, 16888]
+\end{lstlisting}
+\vspace{0.3cm}
+Wysłanie wiadomości do odbiorców:
+\begin{lstlisting}[language=bash]
+send -id "test" -m "Czesc, jestescie tam?"
+\end{lstlisting}
+\vspace{0.3cm}
+Odczyt odebranych wiadomości z bufora:
+\begin{lstlisting}[language=bash]
+flush -id "test"
+\end{lstlisting}
+\vspace{0.3cm}
+Pobranie identyfikatora węzła:
+\begin{lstlisting}[language=bash]
+get nodeID
+\end{lstlisting}
+\vspace{0.3cm}
+Ustawienie czasu RTC (epoch):
+\begin{lstlisting}[language=bash]
+set rtc -t 1711241193
+\end{lstlisting}
+\vspace{0.3cm}
+Wyświetlenie wszystkich komend:
+\begin{lstlisting}[language=bash]
+help
+\end{lstlisting}
+
+\clearpage
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=1\textwidth]{root/help_cmd.png}
+	\caption{Przykładowy wynik komendy \texttt{help} z monitora portu szeregowego}
+\end{figure}
+
+\clearpage
+\subsubsection{Definiowanie komend w kodzie}
+
+Komendy są rejestrowane w funkcji \texttt{registerCommands()}, np.:
+
+\begin{lstlisting}[language=C++]
+Command createConnCmd("connection", "Tworzy nowe polaczenie", output, createConnCallback);
+createConnCmd.addArgSpec(ArgSpec("id", VAL_STRING, true, "ID polaczenia"));
+createConnCmd.addArgSpec(ArgSpec("k", VAL_STRING, true, "Klucz"));
+createConnCmd.addArgSpec(ArgSpec("r", VAL_LIST, true, "Lista odbiorcow"));
+\end{lstlisting}
+
+Funkcja \texttt{createConnCallback} zostanie wywołana, gdy komenda zostanie poprawnie wywołana z argumentami. W przypadku błędu, wyświetlony zostanie odpowiedni komunikat i zwrócony zostanie kod błędu.
+
+\clearpage
+\subsubsection{Argumenty poleceń}
+
+Biblioteka RaptorCLI oferuje zaawansowany system obsługi argumentów poleceń. Każda komenda może definiować wymagane i opcjonalne argumenty różnych typów za pomocą metody \texttt{addArgSpec()}. Specyfikacja argumentu zawiera:
+
+\begin{itemize}
+	\item \textbf{Nazwę} - identyfikator argumentu używany przy parsowaniu
+	\item \textbf{Typ} - może być VAL\_INT, VAL\_STRING, VAL\_LIST lub inny zdefiniowany typ
+	\item \textbf{Wymagalność} - flaga określająca czy argument jest obowiązkowy
+	\item \textbf{Opis} - tekst pomocy wyświetlany przy użyciu komendy \texttt{help}
+\end{itemize}
+
+Przykład definiowania argumentów:
+\begin{lstlisting}[language=C++]
+command.addArgSpec(ArgSpec("name", VAL_STRING, true, "Nazwa elementu"));
+command.addArgSpec(ArgSpec("count", VAL_INT, false, "Liczba elementów (opcjonalne)"));
+\end{lstlisting}
+
+\clearpage
+\subsubsection{Argumenty o nieograniczonej liczbie}
+
+RaptorCLI obsługuje również komendy przyjmujące zmienną liczbę argumentów za pomocą funkcji \texttt{setVariadic()}. Gdy komenda jest oznaczona jako \textit{variadyczna}, może przyjmować dowolną liczbę dodatkowych argumentów po zdefiniowanych parametrach.
+
+\begin{lstlisting}[language=C++]
+Command echoCmd("echo", "Wypisuje wszystkie podane argumenty", output, echoCmdCallback);
+echoCmd.setVariadic(true);
+\end{lstlisting}
+Argumenty variadyczne są następnie dostępne w callbacku przez tablicę \texttt{arguments}:
+\begin{lstlisting}[language=C++]
+void echoCmdCallback(const Command& cmd) {
+	CLIOutput* output = dispatcher.getOutput();
+	for (const auto& arg : cmd.arguments) {
+		output->println(arg.c_str());
+	}
+}
+\end{lstlisting}
+Ta elastyczność umożliwia tworzenie poleceń podobnych do tych znanych z powłok systemów operacyjnych, przyjmujących zmienną liczbę parametrów.
+
+\clearpage
+\subsubsection{Zarządzanie wyjściem i wejściem}
+
+Wyjście i wejście CLI różni się w zależności od interfejsu:
+\begin{itemize}
+	\item \textbf{ArduinoCLIOutput} — dla USB Serial,
+	\item \textbf{BLECLIOutput} — dla komunikacji BLE.
+\end{itemize}
+W zależności od konfiguracji podczas kompilacji, wybierane jest odpowiednie wyjście:
+\begin{lstlisting}[language=C++]
+#ifdef USE_SERIAL_COMM
+	ArduinoCLIOutput serialOutput;
+	dispatcher.registerOutput(&serialOutput);
+#else
+	BLECLIOutput bleOutput((BLEComm*)commChannel);
+	dispatcher.registerOutput(&bleOutput);
+#endif
+\end{lstlisting}
+
+\clearpage
+\subsubsection{Podsumowanie}
+
+Biblioteka RaptorCLI stanowi kluczowy element interakcji użytkownika z systemem LoRaptor. Dzięki niej, użytkownik może dynamicznie zarządzać urządzeniem, wysyłać wiadomości, tworzyć połączenia, modyfikować parametry systemu i odbierać dane --- wszystko z poziomu aplikacji RaptChat lub terminala.
